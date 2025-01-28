@@ -1,0 +1,50 @@
+// Add backup RPC endpoints
+private readonly BACKUP_PROVIDERS = [
+  'https://eth.llamarpc.com',
+  'https://rpc.ankr.com/eth',
+  'https://cloudflare-eth.com'
+];
+
+// Add provider scoring
+interface ProviderScore {
+  successRate: number;
+  avgLatency: number;
+  lastFailure: number;
+  score: number;
+}
+
+private providerScores: Map<string, ProviderScore> = new Map();
+
+private calculateProviderScore(providerId: string): number {
+  const status = this.providerStatus.get(providerId);
+  const score = this.providerScores.get(providerId);
+  
+  if (!status || !score) return 0;
+  
+  return (
+    (1 / (score.avgLatency + 1)) * 0.4 +    // Latency score (40%)
+    score.successRate * 0.4 +                // Success rate (40%)
+    (1 / (Date.now() - score.lastFailure + 1)) * 0.2  // Time since last failure (20%)
+  );
+}
+
+// Add automatic provider rotation
+private async rotateProviders(): Promise<void> {
+  const scores = Array.from(this.providers.keys())
+    .map(id => ({
+      id,
+      score: this.calculateProviderScore(id)
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  // Use top 2 providers
+  const activeProviders = scores.slice(0, 2).map(s => s.id);
+  
+  for (const [id, provider] of this.providers) {
+    if (activeProviders.includes(id)) {
+      provider.pollingInterval = 1000; // Active polling
+    } else {
+      provider.pollingInterval = 5000; // Reduced polling for backups
+    }
+  }
+}
