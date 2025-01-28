@@ -1,0 +1,75 @@
+# Deployment Guide
+
+## Deployment Environments
+
+### Staging Environment
+- URL: `https://staging.arbitrage-system.com`
+- Branch: `main`
+- Auto-deployment: Yes
+- Required approvals: 1
+
+### Production Environment
+- URL: `https://arbitrage-system.com`
+- Branch: `production`
+- Auto-deployment: No
+- Required approvals: 2
+
+## Deployment Process
+
+### 1. Build Process
+```bash
+# Install dependencies
+npm ci
+
+# Run tests
+npm run test
+
+# Build application
+npm run build
+```
+
+### 2. Environment Configuration
+```env
+# Production environment variables
+VITE_API_URL=https://api.arbitrage-system.com
+VITE_WEBSOCKET_URL=wss://ws.arbitrage-system.com
+VITE_ETHEREUM_RPC_URL=https://mainnet.infura.io/v3/your-key
+```
+
+### 3. Deployment Steps
+```bash
+# Deploy to staging
+npm run deploy:staging
+
+# Deploy to production
+npm run deploy:production
+```
+
+## Monitoring
+
+### Health Checks
+- API endpoint: `/health`
+- WebSocket connection
+- Database connectivity
+- External service status
+
+### Alerts
+- System health
+- Performance metrics
+- Error rates
+- Trading activity
+
+## Rollback Procedure
+
+### Quick Rollback
+```bash
+# Revert to previous version
+git checkout v1.2.3
+npm run deploy:production
+```
+
+### Emergency Shutdown
+```bash
+# Stop trading activities
+curl -X POST https://api.arbitrage-system.com/v1/emergency/stop
+```
