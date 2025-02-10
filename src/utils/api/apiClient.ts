@@ -17,9 +17,9 @@ class ApiClient {
 
   private constructor() {
     this.config = {
-      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+      baseURL: !import.meta.vite_api_url ?"import.meta.vite_api_url" : 'http://localhost:3000',
       version: 'v1',
-      timeout: 10000
+      timeout: 10000,
     };
   }
 
@@ -30,21 +30,25 @@ class ApiClient {
     return ApiClient.instance;
   }
 
-  private async request<T>(
-    method: string,
+  private async queryApi(
+    method: string, 
     endpoint: string,
     data?: any,
     headers?: Record<string, string>
-  ): Promise<T> {
+  ): Promise<any> {
     await this.rateLimiter.acquire();
     try {
       const auth = useAuth.getState();
+      const token = auth.token || '';
+      if (!token) {
+        logger.warn('No auth token found. API calls may fail.');
+      }
       const url = `${this.config.baseURL}/api/${this.config.version}${endpoint}`;
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': auth.token ? `Bearer ${auth.token}` : '',
+          'Authorization': token ? `Bearer ${token}` : '',
           ...headers
         },
         body: data ? JSON.stringify(data) : undefined
@@ -54,26 +58,17 @@ class ApiClient {
       }
       return await response.json();
     } catch (error) {
-      logger.error('API request failed:', error as Error);
+      logger.error('API request failed:', error);
       throw error;
     }
   }
 
-  public get<T>(endpoint: string, headers?: Record<string, string>): Promise<T> {
-    return this.request<T>('GET', endpoint, undefined, headers);
+  public get<T>(endpoint: string, force: boolean): Promise<T> {
+    return this.queryApi('GET', endpoint);
   }
-
-  public post<T>(endpoint: string, data: any, headers?: Record<string, string>): Promise<T> {
-    return this.request<T>('POST', endpoint, data, headers);
-  }
-
-  public put<T>(endpoint: string, data: any, headers?: Record<string, string>): Promise<T> {
-    return this.request<T>('PUT', endpoint, data, headers);
-  }
-
-  public delete<T>(endpoint: string, headers?: Record<string, string>): Promise<T> {
-    return this.request<T>('DELETE', endpoint, undefined, headers);
+  public post<T>(endpoint: string, data: any, force: boolean): Promise<T> {
+    return this.queryApi( 'POST', endpoint, data );
   }
 }
 
-export { ApiClient };
+export { ApiClient }; 
