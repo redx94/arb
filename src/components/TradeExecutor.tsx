@@ -77,7 +77,7 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
           warnings: []
         };
 
-        const sellTradeDetails: typeof TradeDetails = {
+        const sellTradeDetails: TradeDetails = {
           ...sellResult.trade,
           profitLoss: Number(sellResult.trade.amount) * Number(sellResult.trade.price),
           effectivePrice: Number(sellResult.trade.price) * (1 - (sellResult.trade.slippage || 0)),

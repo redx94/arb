@@ -13,27 +13,34 @@ export const useArbitrageEngine = () => {
 
   const engine = ArbitrageEngine.getInstance();
 
+  // Define event handlers
+  const handleStarted = () => setStatus('running');
+  const handleStopped = () => setStatus('stopped');
+  const handleError = (error: Error) => {
+    logger.error('Arbitrage engine error:', error);
+    setErrors(prev => [...prev.slice(-4), error.message]);
+  };
+  const handleWarning = (warning: string) => {
+    logger.warn('Arbitrage engine warning:', warning);
+    setWarnings(prev => [...prev.slice(-4), warning]);
+  };
+  const handleLatencyUpdate = (newLatency: number) => setLatency(newLatency);
+
   useEffect(() => {
     // Subscribe to engine events
-    engine.on('started', () => setStatus('running'));
-    engine.on('stopped', () => setStatus('stopped'));
-    engine.on('error', (error: Error) => {
-      logger.error('Arbitrage engine error:', error);
-      setErrors(prev => [...prev.slice(-4), error.message]);
-    });
-    engine.on('warning', (warning: string) => {
-      logger.warn('Arbitrage engine warning:', warning);
-      setWarnings(prev => [...prev.slice(-4), warning]);
-    });
-    engine.on('latencyUpdate', (newLatency: number) => setLatency(newLatency));
+    engine.on('started', handleStarted);
+    engine.on('stopped', handleStopped);
+    engine.on('error', handleError);
+    engine.on('warning', handleWarning);
+    engine.on('latencyUpdate', handleLatencyUpdate);
 
     return () => {
-      // Cleanup event listeners
-      engine.off('started', () => {});
-      engine.off('stopped', () => {});
-      engine.off('error', () => {});
-      engine.off('warning', () => {});
-      engine.off('latencyUpdate', () => {});
+      // Cleanup event listeners using the same handler references
+      engine.off('started', handleStarted);
+      engine.off('stopped', handleStopped);
+      engine.off('error', handleError);
+      engine.off('warning', handleWarning);
+      engine.off('latencyUpdate', handleLatencyUpdate);
     };
   }, [engine]);
 
@@ -71,7 +78,7 @@ export const useArbitrageEngine = () => {
 
   const updateSettings = (settings: any) => {
     try {
-      // Update engine settings
+      // Update engine settings (implementation details)
       logger.info('Updating engine settings:', settings);
     } catch (error) {
       logger.error('Failed to update settings:', error as Error);

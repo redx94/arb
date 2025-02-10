@@ -61,7 +61,7 @@ export const TradeDetails: React.FC<Props> = ({ trade }) => {
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Slippage:</span>
-            <span className="font-medium">{(trade.slippage || 0 * 100).toFixed(2)}%</span>
+            <span className="font-medium">{((trade.slippage || 0) * 100).toFixed(2)}%</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Price Impact:</span>

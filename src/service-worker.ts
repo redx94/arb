@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+declare const self: ServiceWorkerGlobalScope;
 
 const CACHE_NAME = 'app-cache-v1';
 const OFFLINE_URL = '/offline.html';
