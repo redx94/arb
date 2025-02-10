@@ -11,7 +11,7 @@ export const useArbitrageEngine = () => {
   const [warnings, setWarnings] = useState<string[]>([]);
   const engine = ArbitrageEngine.getInstance();
 
-  // Define event handlers
+  // Define event handlers for consistency and cleanup.
   const handleStarted = () => setStatus('running');
   const handleStopped = () => setStatus('stopped');
   const handleError = (error: Error) => {
@@ -38,59 +38,4 @@ export const useArbitrageEngine = () => {
       engine.off('warning', handleWarning);
       engine.off('latencyUpdate', handleLatencyUpdate);
     };
-  }, [engine]);
-
-  const start = () => {
-    try {
-      engine.start();
-      logger.info('Arbitrage engine started');
-    } catch (error) {
-      logger.error('Failed to start arbitrage engine:', error as Error);
-      setErrors(prev => [...prev.slice(-4), (error as Error).message]);
-    }
-  };
-
-  const stop = () => {
-    try {
-      engine.stop();
-      logger.info('Arbitrage engine stopped');
-    } catch (error) {
-      logger.error('Failed to stop arbitrage engine:', error as Error);
-      setErrors(prev => [...prev.slice(-4), (error as Error).message]);
-    }
-  };
-
-  const resetSystem = () => {
-    try {
-      engine.stop();
-      setErrors([]);
-      setWarnings([]);
-      logger.info('System reset completed');
-    } catch (error) {
-      logger.error('Failed to reset system:', error as Error);
-      setErrors(prev => [...prev.slice(-4), (error as Error).message]);
-    }
-  };
-
-  const updateSettings = (settings: any) => {
-    try {
-      // Update engine settings here
-      logger.info('Updating engine settings:', settings);
-    } catch (error) {
-      logger.error('Failed to update settings:', error as Error);
-      setErrors(prev => [...prev.slice(-4), (error as Error).message]);
-    }
-  };
-
-  return {
-    status,
-    latency,
-    errors,
-    warnings,
-    isRunning: status === 'running',
-    start,
-    stop,
-    resetSystem,
-    updateSettings
-  };
-};
+  }, [engine]);};
