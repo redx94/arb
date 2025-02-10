@@ -37,11 +37,9 @@ class ApiClient {
     headers?: Record<string, string>
   ): Promise<T> {
     await this.rateLimiter.acquire();
-
     try {
       const auth = useAuth.getState();
       const url = `${this.config.baseURL}/api/${this.config.version}${endpoint}`;
-
       const response = await fetch(url, {
         method,
         headers: {
@@ -51,11 +49,9 @@ class ApiClient {
         },
         body: data ? JSON.stringify(data) : undefined
       });
-
       if (!response.ok) {
         throw new Error(`API request failed: ${response.statusText}`);
       }
-
       return await response.json();
     } catch (error) {
       logger.error('API request failed:', error as Error);
@@ -79,3 +75,5 @@ class ApiClient {
     return this.request<T>('DELETE', endpoint, undefined, headers);
   }
 }
+
+export { ApiClient };
