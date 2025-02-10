@@ -33,7 +33,7 @@ export const MevRiskMatrix: React.FC = () => {
       <h2 className="text-xl font-semibold mb-4">MEV Risk Assessment</h2>
       <div className="space-y-4">
         {riskLevels.map((risk) => (
-          <div
+          <div 
             key={risk.level}
             className={`${colorClasses[risk.color].bg} ${colorClasses[risk.color].border} p-4 rounded-lg`}
           >
