@@ -6,7 +6,7 @@ const logger = Logger.getInstance();
 
 export class ProfitCalculator {
   private static instance: ProfitCalculator;
-  
+
   private readonly GAS_PRICE_BUFFER = 1.2; // 20% buffer for gas price fluctuations
   private readonly FLASH_LOAN_FEE = 0.0009; // 0.09% flash loan fee
   private readonly MIN_PROFIT_THRESHOLD = ethers.parseEther('0.01'); // 0.01 ETH
@@ -45,8 +45,8 @@ export class ProfitCalculator {
       const sellPriceBN = ethers.parseEther(sellPrice.toString());
 
       // Calculate gross profit
-      const grossProfit = (amountBN * 
-        (sellPriceBN - buyPriceBN)) / 
+      const grossProfit = (amountBN *
+        (sellPriceBN - buyPriceBN)) /
         ethers.parseEther('1');
 
       // Calculate costs
@@ -88,9 +88,9 @@ export class ProfitCalculator {
   slippageCost: bigint;
   }> {
     // Calculate flash loan fee
-      const flashLoanCost = (amount * 
-      price * 
-      ethers.parseEther(this.FLASH_LOAN_FEE.toString())) / 
+      const flashLoanCost = (amount *
+      price *
+      ethers.parseEther(this.FLASH_LOAN_FEE.toString())) /
       ethers.parseEther('1');
 
     // Estimate gas cost
@@ -112,7 +112,7 @@ export class ProfitCalculator {
     try {
       const provider = new ethers.JsonRpcProvider('http://localhost:8545');
       const gasPrice = await provider.getFeeData();
-      
+
       // Add buffer to gas price
       return ethers.parseUnits(
         (Number(gasPrice.gasPrice) * this.GAS_PRICE_BUFFER).toString(),
@@ -133,7 +133,7 @@ export class ProfitCalculator {
     // Calculate slippage based on order size and liquidity
     const baseSlippage = 0.001; // 0.1% base slippage
     const volumeSlippage = (amount * price) / ethers.parseEther('1000'); // Additional slippage based on volume
-    
+
     return (amount *
       price *
       ethers.parseEther((baseSlippage + Number(volumeSlippage)).toString())) /

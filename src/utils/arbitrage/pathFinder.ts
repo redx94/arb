@@ -68,7 +68,7 @@ export class PathFinder {
     start: string
   ): string[][] {
     if (length === 1) return [[start]];
-    
+
     const paths: string[][] = [];
     const remainingExchanges = exchanges.filter(e => e !== start);
 

@@ -50,8 +50,8 @@ export class GasAwareFlashLoan {
 
       return {
         isViable,
-        optimizedGas: totalGasCost.toString(),
-        expectedProfit: netProfit,
+        optimizedGas: ethers.toBigInt(totalGasCost),
+        expectedProfit: ethers.toBigInt(netProfit),
         recommendation
       };
     } catch (error) {
@@ -62,7 +62,7 @@ export class GasAwareFlashLoan {
 
   private determineComplexity(params: FlashLoanParams): 'low' | 'medium' | 'high' {
     const amount = ethers.parseEther(params.amount);
-    
+
     // Determine complexity using native BigInt comparisons
     if (amount > ethers.parseEther('1000')) return 'high';
     if (amount > ethers.parseEther('100')) return 'medium';
@@ -96,7 +96,7 @@ export class GasAwareFlashLoan {
     try {
       // Calculate gas for individual transactions
       const individualGasEstimates = await Promise.all(
-        operations.map(async op => 
+        operations.map(async op =>
           this.gasOptimizer.estimateFlashLoanGas(
             op.token,
             ethers.parseEther(op.amount),
@@ -104,11 +104,11 @@ export class GasAwareFlashLoan {
           )
         )
       );
-      
-const totalIndividualGas = individualGasEstimates.reduce(
-  (sum, gas) => sum.add(gas),
-  ethers.BigNumber.from(0)
-);
+
+      const totalIndividualGas = individualGasEstimates.reduce(
+        (sum, gas) => sum.add(gas),
+        ethers.BigNumber.from(0)
+      );
 
       // Calculate gas for batched transaction
       const batchedGas = await this.gasOptimizer.estimateFlashLoanGas(
@@ -120,9 +120,9 @@ const totalIndividualGas = individualGasEstimates.reduce(
       const savings = totalIndividualGas.sub(batchedGas).toString();
 
       return {
-        batchedGas,
-        individualGas: totalIndividualGas,
-        savings,toString()
+        batchedGas: ethers.toBigInt(batchedGas),
+        individualGas: ethers.toBigInt(totalIndividualGas),
+        savings: BigInt(savings)
       };
     } catch (error) {
       logger.error('Failed to calculate batch savings:', error as Error);

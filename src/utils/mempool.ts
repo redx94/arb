@@ -5,7 +5,7 @@ export class MempoolMonitor {
   private static instance: MempoolMonitor;
   private provider: ethers.JsonRpcProvider;
   private pendingTxs: Set<string> = new Set();
-  
+
   private constructor() {
     this.provider = new ethers.JsonRpcProvider(
       'https://eth-mainnet.g.alchemy.com/v2/your-api-key'
@@ -43,7 +43,7 @@ export class MempoolMonitor {
     // Analyze transaction for MEV risk
     const gasPrice = ethers.BigNumber.from(tx.gasPrice);
     const value = ethers.BigNumber.from(tx.value);
-    
+
     // Check for sandwich attack patterns
     // Check for front-running risks
     // Monitor for flashbots bundles

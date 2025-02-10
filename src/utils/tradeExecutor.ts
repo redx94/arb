@@ -78,7 +78,7 @@ class TradeExecutor {
     if (!balance) throw new Error('No ETH balance found');
 
     const value = ethers.parseEther(amount.toString());
-    
+
     return await walletManager.signTransaction(
       balance.wallet,
       platform === 'DEX' ? 'DEX_CONTRACT_ADDRESS' : 'CEX_CONTRACT_ADDRESS',
@@ -88,10 +88,10 @@ class TradeExecutor {
   }
 
   private async updateBalance(trade: Trade): Promise<void> {
-    const balance = this.balances.find(b => 
+    const balance = this.balances.find(b =>
       b.asset === (trade.amount > 1000 ? 'USDT' : 'ETH')
     );
-    
+
     if (balance) {
       if (trade.platform === 'DEX') {
         balance.dexAmount += trade.type === 'BUY' ? trade.amount : -trade.amount;
@@ -120,7 +120,7 @@ class TradeExecutor {
       // Validate trade with risk manager first
       const balance = this.balances.find(b => b.asset === 'ETH');
       if (!balance) throw new Error('No ETH balance found');
-      
+
       this.riskManager.validateTrade(
         { type, platform, amount: BigInt(amount), price } as Trade,
         balance,
@@ -132,7 +132,7 @@ class TradeExecutor {
 
       // Create and sign transaction
       const transaction = await this.createTransaction(type, platform, amount, price);
-      
+
       const trade: Trade = {
         id: Math.random().toString(36).substring(7),
         type,

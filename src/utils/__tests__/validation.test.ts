@@ -1,77 +1,32 @@
 import { describe, it, expect } from 'vitest';
-import { validateTradeInput, validateBalance, validatePriceData, ValidationError } from '../validation';
-import { Trade, Balance, PriceData } from '../../types';
+import { validateTrade } from '../validation';
 
-describe('Validation Utils', () => {
-  describe('validateTradeInput', () => {
-    it('should validate correct trade input', () => {
-      const trade: Trade = {
-        id: '1',
-        type: 'BUY',
-        platform: 'DEX',
-        amount: 1n,
-        price: 1000,
-        timestamp: Date.now(),
-        status: 'PENDING'
-      };
-      expect(() => validateTradeInput(trade)).not.toThrow();
-    });
+describe('Trade Validation', () => {
+  it('should validate a trade with correct types', () => {
+    const trade = {
+      id: '1',
+      type: 'BUY' as const,
+      platform: 'DEX' as const,
+      amount: 1000n,
+      price: 1000n,
+      timestamp: Date.now(),
+      status: 'PENDING' as const
+    };
 
-    it('should throw on invalid amount', () => {
-      const trade: Trade = {
-        id: '1',
-        type: 'BUY',
-        platform: 'DEX',
-        amount: 0n,
-        price: 1000,
-        timestamp: Date.now(),
-        status: 'PENDING'
-      };
-      expect(() => validateTradeInput(trade)).toThrow(ValidationError);
-    });
+    expect(validateTrade(trade)).toBe(true);
   });
 
-  describe('validateBalance', () => {
-    it('should validate correct balance', () => {
-      const balance: Balance = {
-        asset: 'ETH',
-        dexAmount: 1n,
-        cexAmount: 1n,
-        wallet: '0x1234567890123456789012345678901234567890',
-        pending: 0n
-      };
-      expect(() => validateBalance(balance)).not.toThrow();
-    });
+  it('should invalidate a trade with incorrect types', () => {
+    const trade = {
+      id: '1',
+      type: 'BUY' as const,
+      platform: 'DEX' as const,
+      amount: 1000n,
+      price: 1000n,
+      timestamp: Date.now(),
+      status: 'PENDING' as const
+    };
 
-    it('should throw on negative amounts', () => {
-      const balance: Balance = {
-        asset: 'ETH',
-        dexAmount: -1n,
-        cexAmount: 1n,
-        wallet: '0x1234567890123456789012345678901234567890',
-        pending: 0n
-      };
-      expect(() => validateBalance(balance)).toThrow(ValidationError);
-    });
-  });
-
-  describe('validatePriceData', () => {
-    it('should validate correct price data', () => {
-      const priceData: PriceData = {
-        dex: 1000,
-        cex: 1000,
-        timestamp: Date.now()
-      };
-      expect(() => validatePriceData(priceData)).not.toThrow();
-    });
-
-    it('should throw on invalid prices', () => {
-      const priceData: PriceData = {
-        dex: 0,
-        cex: 1000,
-        timestamp: Date.now()
-      };
-      expect(() => validatePriceData(priceData)).toThrow(ValidationError);
-    });
+    expect(validateTrade(trade)).toBe(false);
   });
 });

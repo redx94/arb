@@ -33,7 +33,7 @@ export class FlashLoanHandler {
     // Validate minimum profit threshold
     const profitBN = ethers.parseEther(params.expectedProfit);
     const minProfit = ethers.parseEther(this.MIN_PROFIT_THRESHOLD);
-    if (profitBN.lt(minProfit)) {
+    if (profitBN < minProfit) {
       throw new Error('Insufficient profit margin for flash loan');
     }
 

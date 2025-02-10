@@ -76,6 +76,10 @@ export class CacheManager<T> {
     this.cache.delete(oldestKey);
   }
 
+  public getAll(): T[] {
+    return Array.from(this.cache.values()).map(entry => entry.value);
+  }
+
   public getAllEntries(): CacheEntry<T>[] {
     return Array.from(this.cache.values());
   }
