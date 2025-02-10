@@ -10,8 +10,11 @@ export class RiskManager {
     return RiskManager.instance;
   }
 
-  public validateTrade(data: any, balance: any, riskThreshold: number): boolean {
-    // Implement risk validation logic here
-    return true;
+  // Updated validation: if price difference exceeds 5%, throw an error.
+  public validateTrade(data: { dex: number; cex: number }): void {
+    const diffPercentage = (Math.abs(data.cex - data.dex) / Math.min(data.cex, data.dex)) * 100;
+    if (diffPercentage > 5) {
+      throw new Error('Risk limit exceeded: Price difference exceeds 5% threshold.');
+    }
   }
 }
