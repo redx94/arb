@@ -1,4 +1,3 @@
-
 export class PerformanceMonitor {
   private static instance: PerformanceMonitor;
   private metrics: Map<string, number[]> = new Map();
@@ -81,7 +80,7 @@ export class Logger {
   public info(message: string, meta?: any): void {
     const formattedMessage = this.formatMessage('info', message, meta);
     console.log(formattedMessage);
-    this.bufferLog({ level: 'info', message, meta });
+    this.bufferLog({ level: 'info', message, meta, timestamp: new Date() });
   }
 
   public error(message: string, error?: Error, meta?: any): void {
@@ -91,13 +90,13 @@ export class Logger {
       ...meta
     });
     console.error(formattedMessage);
-    this.bufferLog({ level: 'error', message, error, meta });
+    this.bufferLog({ level: 'error', message, error, meta, timestamp: new Date() });
   }
 
   public warn(message: string, meta?: any): void {
     const formattedMessage = this.formatMessage('warn', message, meta);
     console.warn(formattedMessage);
-    this.bufferLog({ level: 'warn', message, meta });
+    this.bufferLog({ level: 'warn', message, meta, timestamp: new Date() });
   }
 
   private bufferLog(log: { level: string; message: string; meta?: any; timestamp: Date }): void {

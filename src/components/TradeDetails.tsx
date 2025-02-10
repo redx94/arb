@@ -6,7 +6,7 @@ interface Props {
   trade: TradeDetails;
 }
 
-export const TradeDetails: React.FC<Props> = ({ trade }) => {
+const TradeDetails: React.FC<Props> = ({ trade }: { trade: TradeDetails }) => {
   const isSuccess = trade.status === 'COMPLETED';
   const hasWarnings = trade.warnings && trade.warnings.length > 0;
 
@@ -33,27 +33,27 @@ export const TradeDetails: React.FC<Props> = ({ trade }) => {
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Amount:</span>
-            <span className="font-medium">{trade.amount} ETH</span>
+            <span className="font-medium">{Number(trade.amount)} ETH</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Price:</span>
-            <span className="font-medium">${trade.price.toFixed(2)}</span>
+            <span className="font-medium">${Number(trade.price).toFixed(4)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Effective Price:</span>
-            <span className="font-medium">${trade.effectivePrice.toFixed(2)}</span>
+            <span className="font-medium">${Number(trade.effectivePrice).toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Profit/Loss:</span>
-            <span className={`font-medium ${trade.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ${Math.abs(trade.profitLoss).toFixed(2)} {trade.profitLoss >= 0 ? '(Profit)' : '(Loss)'}
+            <span className={`font-medium ${Number(trade.profitLoss) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              ${Math.abs(Number(trade.profitLoss)).toFixed(2)} {Number(trade.profitLoss) >= 0 ? '(Profit)' : '(Loss)'}
             </span>
           </div>
         </div>
         <div className="space-y-2">
           <div className="flex justify-between">
             <span className="text-gray-600">Gas Cost:</span>
-            <span className="font-medium">${trade.gasCost?.toFixed(4) || '0.00'}</span>
+            <span className="font-medium">${trade.gasCost ? Number(trade.gasCost).toFixed(4) : '0.00'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-gray-600">Slippage:</span>
@@ -81,19 +81,19 @@ export const TradeDetails: React.FC<Props> = ({ trade }) => {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex justify-between">
               <span className="text-blue-700">Protocol:</span>
-              <span className="font-medium">{trade.flashLoan.protocol}</span>
+              <span className="font-medium">{trade.flashLoan?.protocol}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-blue-700">Amount:</span>
-              <span className="font-medium">{trade.flashLoan.amount} ETH</span>
+              <span className="font-medium">{trade.flashLoan ? Number(trade.flashLoan.amount) : 0} ETH</span>
             </div>
             <div className="flex justify-between">
               <span className="text-blue-700">Fee:</span>
-              <span className="font-medium">${trade.flashLoan.fee}</span>
+              <span className="font-medium">${trade.flashLoan ? Number(trade.flashLoan.fee) : 0}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-blue-700">Net Profit:</span>
-              <span className="font-medium text-green-600">${trade.flashLoan.profit}</span>
+              <span className="font-medium text-green-600">${trade.flashLoan ? Number(trade.flashLoan.profit) : 0}</span>
             </div>
           </div>
         </div>
@@ -102,10 +102,10 @@ export const TradeDetails: React.FC<Props> = ({ trade }) => {
         <div className="mt-4">
           <h4 className="font-medium mb-2">Routing Path</h4>
           <div className="flex items-center flex-wrap gap-2">
-            {trade.routingPath.map((step, index) => (
+            {trade.routingPath?.map((step: string, index: number) => (
               <React.Fragment key={index}>
                 <span className="px-2 py-1 bg-gray-100 rounded text-sm">{step}</span>
-                {index < trade.routingPath.length - 1 && (
+                {trade.routingPath && index < trade.routingPath.length - 1 && (
                   <ArrowRight className="h-4 w-4 text-gray-400" />
                 )}
               </React.Fragment>
@@ -120,7 +120,7 @@ export const TradeDetails: React.FC<Props> = ({ trade }) => {
             <div>
               <h4 className="font-medium text-yellow-800 mb-1">Warnings</h4>
               <ul className="list-disc list-inside space-y-1">
-                {trade.warnings?.map((warning, index) => (
+                {trade.warnings?.map((warning: string, index: number) => (
                   <li key={index} className="text-sm text-yellow-700">{warning}</li>
                 ))}
               </ul>
@@ -141,3 +141,5 @@ export const TradeDetails: React.FC<Props> = ({ trade }) => {
     </div>
   );
 };
+
+export default TradeDetails;

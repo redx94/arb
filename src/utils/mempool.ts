@@ -41,8 +41,8 @@ export class MempoolMonitor {
 
   private analyzeMEVRisk(tx: any) {
     // Analyze transaction for MEV risk
-    const gasPrice = ethers.BigNumber.from(tx.gasPrice);
-    const value = ethers.BigNumber.from(tx.value);
+    const gasPrice = ethers.utils.parseUnits(tx.gasPrice.toString(), 'wei');
+    const value = ethers.utils.parseUnits(tx.value.toString(), 'wei');
 
     // Check for sandwich attack patterns
     // Check for front-running risks

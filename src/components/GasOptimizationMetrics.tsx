@@ -18,7 +18,7 @@ export const GasOptimizationMetrics: React.FC = () => {
   });
 
   useEffect(() => {
-    const gasOptimizer = GasOptimizer.getInstance();
+    // const gasOptimizer = GasOptimizer.getInstance();
     const updateMetrics = async () => {
       // In a real implementation, fetch these from gasOptimizer
       setMetrics({

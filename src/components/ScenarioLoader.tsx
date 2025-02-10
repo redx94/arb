@@ -11,25 +11,49 @@ interface Props {
 const predefinedScenarios: SimulationScenario[] = [
   {
     name: 'Normal Market',
-    description: 'Standard market conditions with typical volatility',
+    networkConditions: {
+      gasPrice: 50,
+      networkLatency: 100,
+      blockTime: 15,
+      confirmationBlocks: 12
+    },
+    profitThreshold: 0.01,
     volatility: 0.2,
     dexMultiplier: 1
   },
   {
     name: 'High Volatility',
-    description: 'Extreme market movements with significant price swings',
+    networkConditions: {
+      gasPrice: 60,
+      networkLatency: 120,
+      blockTime: 18,
+      confirmationBlocks: 15
+    },
+    profitThreshold: 0.02,
     volatility: 0.5,
     dexMultiplier: 1
   },
   {
     name: 'DEX Premium',
-    description: 'DEX prices consistently higher than CEX',
+    networkConditions: {
+      gasPrice: 55,
+      networkLatency: 110,
+      blockTime: 16,
+      confirmationBlocks: 13
+    },
+    profitThreshold: 0.015,
     volatility: 0.2,
     dexMultiplier: 1.05
   },
   {
     name: 'DEX Discount',
-    description: 'DEX prices consistently lower than CEX',
+    networkConditions: {
+      gasPrice: 45,
+      networkLatency: 90,
+      blockTime: 14,
+      confirmationBlocks: 11
+    },
+    profitThreshold: 0.005,
     volatility: 0.2,
     dexMultiplier: 0.95
   }
@@ -56,8 +80,7 @@ export const ScenarioLoader: React.FC<Props> = ({ onScenarioChange, currentScena
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium">{scenario.name}</h3>
-                <p className="text-sm text-gray-600">{scenario.description}</p>
-              </div>
+                              </div>
               <PlayCircle className={`${currentScenario.name === scenario.name ? 'text-blue-500' : 'text-gray-400'}`} />
             </div>
           </button>

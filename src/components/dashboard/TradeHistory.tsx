@@ -1,5 +1,5 @@
 import React from 'react';
-import { TradeDetails } from '../TradeDetails';
+import TradeDetails from '../TradeDetails';
 import type { TradeDetails as TradeDetailsType } from '../../types';
 
 interface Props {

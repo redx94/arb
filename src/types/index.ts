@@ -10,6 +10,34 @@ export interface Trade {
   gasCost?: bigint;
   transaction?: Transaction;
   executionTime?: number;
+  routingPath?: string[];
+}
+
+export type NetworkConditions = {
+  gasPrice: number;
+  networkLatency: number;
+  blockTime: number;
+  confirmationBlocks: number;
+};
+
+export type SimulationScenario = {
+  name: string;
+  networkConditions: NetworkConditions;
+  profitThreshold: number;
+  volatility: number;
+  dexMultiplier: number;
+};
+
+export interface RiskLevel {
+  level: string;
+  color: string;
+  description: string;
+}
+
+export interface TradeResult {
+  success: boolean;
+  trade?: Trade;
+  error?: string;
 }
 
 export interface Balance {
@@ -43,4 +71,39 @@ export interface Wallet {
   privateKey: string;
   chainId: number;
   network: string;
+}
+
+export interface TradeDetails {
+  id: string;
+  type: 'BUY' | 'SELL';
+  platform: 'DEX' | 'CEX';
+  amount: bigint;
+  price: bigint;
+  effectivePrice: bigint;
+  profitLoss: bigint;
+  gasCost?: bigint;
+  slippage?: number;
+  priceImpact: number;
+  executionTime?: number;
+  blockNumber?: number;
+  flashLoan?: {
+    protocol: string;
+    amount: bigint;
+    fee: bigint;
+    profit: bigint;
+  };
+  routingPath?: string[];
+  warnings?: string[];
+  transaction?: Transaction;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED';
+}
+
+export interface ArbitrageOpportunity {
+  id: string;
+  dex: number;
+  cex: number;
+  amount: bigint;
+  priceDiff: bigint;
+  profit: bigint;
+  timestamp: number;
 }
