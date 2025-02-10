@@ -1,45 +1,45 @@
-/// <reference lib="webworker" />
-
 declare const self: ServiceWorkerGlobalScope;
 
-const CACHE_NAME = 'app-cache-v2'; // Updated cache name to force refresh on updates
-const OFFLINE_URL = '/offline.html';
+const CACHE_NAME = "app-cache-v2"; // Updated cache name
+const OFFLINE_URL = "/offline.html";
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/offline.html',
-  '/manifest.json',
-  '/static/css/main.css',
-  '/static/js/main.js'
+  // Static assets for caching
+  "/",
+  "/index.html",
+  OFFLINE_URL,
+  "/manifest.json",
+  "/static/css/main.css",
+  "/static/js/main.js"
 ];
 
-self.addEventListener('install', (event: ExtendableEvent) => {
+self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
+    caches.open(CACHE_NAME)
+    .then(cache => cache.addAll(STATIC_ASSETS))
   );
 });
 
-self.addEventListener('activate', (event: ExtendableEvent) => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all
-      (cacheNames.filter(name => name !== CACH_NAME))
-      .map(mane => caches.delete(mane));
-    })
+    caches.keys().then(cacheNames =>
+      Promise.all( cacheNames
+        .filter((name) => name !== CACHE_NAME) 
+        .map((cache) => caches.delete(cache))
+      )
   );
 });
 
-
-self.addEventListener('fetch', (event: FetchEvent) => {
-  if (event.request.mode === 'navigate') {
+self.addEventListener("fetch", (event) => {
+  if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(() =>        caches.match(OFFLINE_URL).then(
-          response => response || caches.match(event.request)
-        )
+      fetch(event.request)
+      .catch(() => caches.match(OFFLINE_URL).then(
+        (response) => response || caches.match(event.request)
+      )
     );
     return;
   }
   event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+    caches.match(event.request).then((response) => response || fetch(event.request))
   );
 });
