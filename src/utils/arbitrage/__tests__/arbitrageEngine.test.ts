@@ -10,7 +10,7 @@ describe('ArbitrageEngine', () => {
 
   beforeEach(() => {
     arbitrageEngine = ArbitrageEngine.getInstance();
-    
+
     mockPriceData = {
       dex: 1000,
       cex: 1020, // 2% difference
@@ -23,7 +23,7 @@ describe('ArbitrageEngine', () => {
 
   it('should detect arbitrage opportunities', async () => {
     const opportunities: PriceData[] = [];
-    
+
     arbitrageEngine.on('opportunity', (data) => {
       opportunities.push(data);
     });
@@ -38,7 +38,7 @@ describe('ArbitrageEngine', () => {
 
   it('should not trade when profit is below threshold', async () => {
     const trades: any[] = [];
-    
+
     arbitrageEngine.on('execution', (data) => {
       trades.push(data);
     });
@@ -57,7 +57,7 @@ describe('ArbitrageEngine', () => {
 
   it('should respect risk management rules', async () => {
     const warnings: any[] = [];
-    
+
     arbitrageEngine.on('warning', (data) => {
       warnings.push(data);
     });
@@ -76,7 +76,7 @@ describe('ArbitrageEngine', () => {
 
   it('should handle execution time limits', async () => {
     const slowExecutions: any[] = [];
-    
+
     arbitrageEngine.on('warning', (data) => {
       if (data.includes('execution time')) {
         slowExecutions.push(data);

@@ -12,16 +12,16 @@ export const PerformanceMetrics: React.FC<Props> = ({ trades }) => {
   const successfulTrades = trades.filter(t => t.status === 'COMPLETED').length;
   const successRate = totalTrades > 0 ? (successfulTrades / totalTrades) * 100 : 0;
   
-  const totalProfit = trades.reduce((sum, trade) => {
-    if (trade.status !== 'COMPLETED') return sum;
-    const profit = trade.type === 'SELL' ? 
-      trade.amount * trade.price : 
-      -(trade.amount * trade.price);
-    return sum + profit;
-  }, 0);
+const totalProfit = trades.reduce((sum, trade) => {
+  if (trade.status !== 'COMPLETED') return sum;
+  const profit = trade.type === 'SELL'
+    ? trade.amount * trade.price
+    : -(trade.amount * trade.price);
+  return sum + profit;
+}, 0n);
 
-  const averageExecutionTime = trades.reduce((sum, trade) => 
-    sum + (trade.executionTime || 0), 0) / (totalTrades || 1);
+const averageExecutionTime = trades.reduce((sum, trade) =>
+  sum + BigInt(trade.executionTime || 0), 0n) / BigInt(totalTrades || 1);
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
@@ -49,9 +49,9 @@ export const PerformanceMetrics: React.FC<Props> = ({ trades }) => {
             <h3 className="text-sm font-medium text-blue-800">Total Profit</h3>
             <DollarSign className="h-5 w-5 text-blue-600" />
           </div>
-          <p className="text-2xl font-bold text-blue-900">
-            ${totalProfit.toFixed(2)}
-          </p>
+<p className="text-2xl font-bold text-blue-900">
+  ${Number(totalProfit).toFixed(2)}
+</p>
           <p className="text-sm text-blue-700 mt-1">
             Net profit across all trades
           </p>
@@ -63,9 +63,9 @@ export const PerformanceMetrics: React.FC<Props> = ({ trades }) => {
             <h3 className="text-sm font-medium text-purple-800">Avg. Execution</h3>
             <Clock className="h-5 w-5 text-purple-600" />
           </div>
-          <p className="text-2xl font-bold text-purple-900">
-            {averageExecutionTime.toFixed(0)}ms
-          </p>
+<p className="text-2xl font-bold text-purple-900">
+  {Number(averageExecutionTime).toFixed(0)}ms
+</p>
           <p className="text-sm text-purple-700 mt-1">
             Average trade execution time
           </p>

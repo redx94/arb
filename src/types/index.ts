@@ -3,12 +3,13 @@ export interface Trade {
   type: 'BUY' | 'SELL';
   platform: 'DEX' | 'CEX';
   amount: bigint;
-  price: number;
+  price: bigint;
   timestamp: number;
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
   slippage?: number;
   gasCost?: bigint;
   transaction?: Transaction;
+  executionTime?: number;
 }
 
 export interface Balance {
@@ -35,4 +36,11 @@ export interface Transaction {
   nonce: number;
   data?: string;
   chainId: number;
+}
+
+export interface Wallet {
+  address: string;
+  privateKey: string;
+  chainId: number;
+  network: string;
 }

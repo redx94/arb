@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Activity, AlertTriangle, TrendingUp, Settings, PieChart, Clock, Zap, Shield } from 'lucide-react';
+import { Activity, Clock } from 'lucide-react';
 import { SystemStatus } from './SystemStatus';
 import { TradingControls } from './TradingControls';
 import { RiskManagement } from './RiskManagement';
@@ -13,7 +14,6 @@ import { useTradeStore } from '../../utils/store';
 
 export const Dashboard: React.FC = () => {
   const trades = useTradeStore(state => state.trades);
-  const priceHistory = useTradeStore(state => state.priceHistory);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

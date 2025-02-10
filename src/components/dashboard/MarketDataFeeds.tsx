@@ -1,7 +1,8 @@
 import React from 'react';
-import { Activity, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
+import { Activity, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
 import { useTradeStore } from '../../utils/store';
 import { PriceFeed } from '../../utils/priceFeeds';
+import { PriceData } from '../../types';
 import { Logger } from '../../utils/monitoring';
 
 const logger = Logger.getInstance();
@@ -45,20 +46,20 @@ export const MarketDataFeeds: React.FC = () => {
 
   React.useEffect(() => {
     const priceFeed = PriceFeed.getInstance();
-    
-    const handlePriceUpdate = (data: any) => {
+
+    const handlePriceUpdate = (data: PriceData) => {
       try {
         setMarkets(prev => ({
           ...prev,
           'ETH/USDT': {
             ...prev['ETH/USDT'],
-            dex: { ...prev['ETH/USDT'].dex, price: data.dex },
-            cex: { ...prev['ETH/USDT'].cex, price: data.cex },
-            spread: ((Math.abs(data.dex - data.cex) / data.cex) * 100),
-            lastUpdate: data.timestamp
+            dex: { ...prev['ETH/USDT'].dex, price: Number(data.dex) },
+            cex: { ...prev['ETH/USDT'].cex, price: Number(data.cex) },
+            spread: Number((Math.abs(data.dex - data.cex) * 100) / data.cex),
+            lastUpdate: Number(data.timestamp)
           }
         }));
-        setLastUpdate(data.timestamp);
+        setLastUpdate(Number(data.timestamp));
         setStatus('connected');
         updatePriceHistory(data);
       } catch (error) {
@@ -89,7 +90,7 @@ export const MarketDataFeeds: React.FC = () => {
         </h2>
         <div className="flex items-center">
           <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
-            status === 'connected' 
+            status === 'connected'
               ? 'bg-green-100 text-green-800'
               : status === 'error'
               ? 'bg-red-100 text-red-800'

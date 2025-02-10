@@ -1,8 +1,6 @@
-import { EventEmitter } from 'events';
-
 export class Logger {
   private static instance: Logger;
-  private logBuffer: any[] = [];
+  private logBuffer: { level: string; message: string; meta?: any; timestamp: Date; error?: Error }[] = [];
   private readonly BUFFER_SIZE = 1000;
 
   private constructor() {}
@@ -26,7 +24,7 @@ export class Logger {
   public info(message: string, meta?: any): void {
     const formattedMessage = this.formatMessage('info', message, meta);
     console.log(formattedMessage);
-    this.bufferLog({ level: 'info', message, meta });
+    this.bufferLog({ level: 'info', message, meta, timestamp: new Date() });
   }
 
   public error(message: string, error?: Error, meta?: any): void {
@@ -36,23 +34,23 @@ export class Logger {
       ...meta
     });
     console.error(formattedMessage);
-    this.bufferLog({ level: 'error', message, error, meta });
+    this.bufferLog({ level: 'error', message, error, meta, timestamp: new Date() });
   }
 
   public warn(message: string, meta?: any): void {
     const formattedMessage = this.formatMessage('warn', message, meta);
     console.warn(formattedMessage);
-    this.bufferLog({ level: 'warn', message, meta });
+    this.bufferLog({ level: 'warn', message, meta, timestamp: new Date() });
   }
 
-  private bufferLog(log: any): void {
+  private bufferLog(log: { level: string; message: string; meta?: any; timestamp: Date; error?: Error }): void {
     this.logBuffer.push({ ...log, timestamp: new Date() });
     if (this.logBuffer.length > this.BUFFER_SIZE) {
       this.logBuffer.shift();
     }
   }
 
-  public getLogs(): any[] {
+  public getLogs(): { level: string; message: string; meta?: any; timestamp: Date; error?: Error }[] {
     return [...this.logBuffer];
   }
 
@@ -76,12 +74,12 @@ export class PerformanceMonitor {
   }
 
   public startTimer(label: string): void {
-    performance.mark(\`\${label}-start\`);
+    performance.mark(`${label}-start`);
   }
 
   public endTimer(label: string): number {
-    performance.mark(\`\${label}-end\`);
-    performance.measure(label, \`\${label}-start\`, \`\${label}-end\`);
+    performance.mark(`${label}-end`);
+    performance.measure(label, `${label}-start`, `${label}-end`);
     const duration = performance.getEntriesByName(label)[0].duration;
     this.recordMetric(label, duration);
     return duration;

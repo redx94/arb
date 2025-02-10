@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, Pause, Settings, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Play, Pause, Settings, RefreshCw } from 'lucide-react';
 import { useArbitrageEngine } from '../../hooks/useArbitrageEngine';
 
 export const TradingControls: React.FC = () => {

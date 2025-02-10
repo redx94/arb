@@ -17,7 +17,7 @@ export class FlashLoanHandler {
   private readonly MIN_PROFIT_THRESHOLD = '0.05'; // 5% minimum profit
   private readonly MAX_GAS_PRICE = '500'; // Gwei
   private readonly SAFETY_BUFFER = '1.02'; // 2% safety buffer for repayment
-  
+
   private constructor() {
     this.riskManager = RiskManager.getInstance();
   }
@@ -38,7 +38,7 @@ export class FlashLoanHandler {
     }
 
     // Check gas price
-    const gasPrice = await this.getCurrentGasPrice();
+    const gasPrice = ethers.BigNumber.from(await this.getCurrentGasPrice());
     if (gasPrice.gt(ethers.parseUnits(this.MAX_GAS_PRICE, 'gwei'))) {
       throw new Error('Gas price too high for profitable execution');
     }
@@ -60,7 +60,7 @@ export class FlashLoanHandler {
     try {
       // Pre-flight checks
       await this.validateFlashLoan(params);
-      
+
       // Simulate execution first
       const simulation = await this.simulateExecution(params);
       if (!simulation.success) {
@@ -69,22 +69,22 @@ export class FlashLoanHandler {
 
       // Execute the flash loan with safety checks
       const txHash = await this.sendFlashLoanTransaction(params);
-      
+
       // Monitor transaction
       await this.monitorTransaction(txHash);
-      
+
       return txHash;
     } catch (error) {
-      throw new Error(`Flash loan execution failed: ${error.message}`);
+      throw new Error(`Flash loan execution failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  private async getCurrentGasPrice(): Promise<ethers.BigNumber> {
+  private async getCurrentGasPrice(): Promise<ethers.BigNumberish> {
     // Implementation to get current gas price
     return ethers.parseUnits('50', 'gwei'); // Example
   }
 
-  private async simulateExecution(params: FlashLoanParams) {
+  private async simulateExecution(params: FlashLoanParams): Promise<{ success: boolean; error: string | null }> {
     // Implement simulation logic
     return { success: true, error: null };
   }
@@ -94,7 +94,7 @@ export class FlashLoanHandler {
     return '0x...'; // Return transaction hash
   }
 
-  private async monitorTransaction(txHash: string) {
+  private async monitorTransaction(txHash: string): Promise<void> {
     // Monitor transaction status and handle reverts
   }
 }

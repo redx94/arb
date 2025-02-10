@@ -42,7 +42,7 @@ export class CacheManager<T> {
   public get(key: string): T | null {
     try {
       const entry = this.cache.get(key);
-      
+
       if (!entry) {
         return null;
       }
@@ -72,7 +72,11 @@ export class CacheManager<T> {
       .reduce((oldest, current) => {
         return oldest[1].timestamp < current[1].timestamp ? oldest : current;
       })[0];
-    
+
     this.cache.delete(oldestKey);
+  }
+
+  public getAllEntries(): CacheEntry<T>[] {
+    return Array.from(this.cache.values());
   }
 }

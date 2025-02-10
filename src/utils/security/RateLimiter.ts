@@ -21,9 +21,9 @@ export class RateLimiter {
     try {
       const now = Date.now();
       const requests = this.requests.get(identifier) || [];
-      
+
       // Remove expired timestamps
-      const validRequests = requests.filter(timestamp => 
+      const validRequests = requests.filter(timestamp =>
         now - timestamp < this.WINDOW_MS
       );
 
@@ -44,7 +44,7 @@ export class RateLimiter {
   public getRemainingRequests(identifier: string): number {
     const now = Date.now();
     const requests = this.requests.get(identifier) || [];
-    const validRequests = requests.filter(timestamp => 
+    const validRequests = requests.filter(timestamp =>
       now - timestamp < this.WINDOW_MS
     );
     return Math.max(0, this.MAX_REQUESTS - validRequests.length);

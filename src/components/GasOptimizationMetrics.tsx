@@ -1,6 +1,5 @@
 import React from 'react';
 import { Gauge, TrendingDown, Zap, DollarSign } from 'lucide-react';
-import { ethers } from 'ethers';
 import { GasOptimizer } from '../utils/gas/GasOptimizer';
 
 export const GasOptimizationMetrics: React.FC = () => {
@@ -13,7 +12,7 @@ export const GasOptimizationMetrics: React.FC = () => {
 
   React.useEffect(() => {
     const gasOptimizer = GasOptimizer.getInstance();
-    
+
     const updateMetrics = async () => {
       // In a real implementation, these would come from the GasOptimizer
       setMetrics({

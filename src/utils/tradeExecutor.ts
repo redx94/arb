@@ -19,17 +19,17 @@ class TradeExecutor {
     this.balances = [
       {
         asset: 'ETH',
-        dexAmount: 10,
-        cexAmount: 10,
+        dexAmount: ethers.BigNumber.from(10),
+        cexAmount: ethers.BigNumber.from(10),
         wallet: wallet.address,
-        pending: 0
+        pending: ethers.BigNumber.from(0)
       },
       {
         asset: 'USDT',
-        dexAmount: 50000,
-        cexAmount: 50000,
+        dexAmount: ethers.BigNumber.from(50000),
+        cexAmount: ethers.BigNumber.from(50000),
         wallet: wallet.address,
-        pending: 0
+        pending: ethers.BigNumber.from(0)
       }
     ];
   }
@@ -95,7 +95,7 @@ class TradeExecutor {
     if (balance) {
       if (trade.platform === 'DEX') {
         balance.dexAmount += trade.type === 'BUY' ? trade.amount : -trade.amount;
-        balance.pending = trade.status === 'PENDING' ? trade.amount : 0;
+        balance.pending = trade.status === 'PENDING' ? BigInt(trade.amount) : BigInt(0);
       } else {
         balance.cexAmount += trade.type === 'BUY' ? trade.amount : -trade.amount;
       }
@@ -122,7 +122,7 @@ class TradeExecutor {
       if (!balance) throw new Error('No ETH balance found');
       
       this.riskManager.validateTrade(
-        { type, platform, amount, price } as Trade,
+        { type, platform, amount: BigInt(amount), price } as Trade,
         balance,
         { dex: price, cex: price, timestamp: Date.now() }
       );
@@ -137,12 +137,12 @@ class TradeExecutor {
         id: Math.random().toString(36).substring(7),
         type,
         platform,
-        amount,
+        amount: BigInt(amount),
         price,
         timestamp: Date.now(),
         status: 'PENDING',
         slippage,
-        gasCost,
+        gasCost: BigInt(gasCost),
         transaction
       };
 

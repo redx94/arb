@@ -61,7 +61,7 @@ export const TradeHistory: React.FC<Props> = ({ trades }) => {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {trade.amount.toFixed(4)} ETH
+                  {Number(trade.amount).toFixed(4)} ETH
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   ${trade.price.toFixed(2)}

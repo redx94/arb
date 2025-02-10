@@ -41,7 +41,7 @@ class ApiClient {
     try {
       const auth = useAuth.getState();
       const url = `${this.config.baseURL}/api/${this.config.version}${endpoint}`;
-      
+
       const response = await fetch(url, {
         method,
         headers: {

@@ -9,7 +9,7 @@ describe('Validation Utils', () => {
         id: '1',
         type: 'BUY',
         platform: 'DEX',
-        amount: 1,
+        amount: 1n,
         price: 1000,
         timestamp: Date.now(),
         status: 'PENDING'
@@ -22,7 +22,7 @@ describe('Validation Utils', () => {
         id: '1',
         type: 'BUY',
         platform: 'DEX',
-        amount: 0,
+        amount: 0n,
         price: 1000,
         timestamp: Date.now(),
         status: 'PENDING'
@@ -35,10 +35,10 @@ describe('Validation Utils', () => {
     it('should validate correct balance', () => {
       const balance: Balance = {
         asset: 'ETH',
-        dexAmount: 1,
-        cexAmount: 1,
+        dexAmount: 1n,
+        cexAmount: 1n,
         wallet: '0x1234567890123456789012345678901234567890',
-        pending: 0
+        pending: 0n
       };
       expect(() => validateBalance(balance)).not.toThrow();
     });
@@ -46,10 +46,10 @@ describe('Validation Utils', () => {
     it('should throw on negative amounts', () => {
       const balance: Balance = {
         asset: 'ETH',
-        dexAmount: -1,
-        cexAmount: 1,
+        dexAmount: -1n,
+        cexAmount: 1n,
         wallet: '0x1234567890123456789012345678901234567890',
-        pending: 0
+        pending: 0n
       };
       expect(() => validateBalance(balance)).toThrow(ValidationError);
     });

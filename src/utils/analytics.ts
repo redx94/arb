@@ -13,7 +13,7 @@ export class PerformanceAnalytics {
 
   public getPerformanceMetrics() {
     const profitableTrades = this.trades.filter(t => this.calculateProfitLoss(t) > 0);
-    
+
     return {
       winRate: profitableTrades.length / this.trades.length,
       averageReturn: this.calculateAverageReturn(),
@@ -23,20 +23,20 @@ export class PerformanceAnalytics {
     };
   }
 
-  private calculateProfitLoss(trade: Trade): number {
+  private calculateProfitLoss(trade: Trade): bigint {
     // Implementation of P&L calculation
-    return trade.type === 'SELL' ? 
-      trade.amount * trade.price - (trade.gasCost || 0) :
-      -(trade.amount * trade.price + (trade.gasCost || 0));
+    return trade.type === 'SELL' ?
+      BigInt(trade.amount) * BigInt(trade.price) - BigInt(trade.gasCost || 0) :
+      -(BigInt(trade.amount) * BigInt(trade.price) + BigInt(trade.gasCost || 0));
   }
 
-  private calculateAverageReturn(): number {
+  private calculateAverageReturn(): bigint {
     const returns = this.trades.map(t => this.calculateProfitLoss(t));
-    return returns.reduce((a, b) => a + b, 0) / returns.length;
+    return returns.reduce((a, b) => a + b, 0n) / BigInt(returns.length);
   }
 
   private calculateSharpeRatio(): number {
-    const returns = this.trades.map(t => this.calculateProfitLoss(t));
+    const returns = this.trades.map(t => Number(this.calculateProfitLoss(t)));
     const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
     const stdDev = Math.sqrt(
       returns.reduce((a, b) => a + Math.pow(b - avgReturn, 2), 0) / returns.length
@@ -50,7 +50,7 @@ export class PerformanceAnalytics {
     let runningTotal = 0;
 
     for (const trade of this.trades) {
-      runningTotal += this.calculateProfitLoss(trade);
+      runningTotal += Number(this.calculateProfitLoss(trade));
       peak = Math.max(peak, runningTotal);
       maxDrawdown = Math.max(maxDrawdown, peak - runningTotal);
     }

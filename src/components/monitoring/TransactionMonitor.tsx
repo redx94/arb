@@ -23,22 +23,22 @@ export const TransactionMonitor: React.FC = () => {
   React.useEffect(() => {
     const updateTransactions = () => {
       const updatedTransactions = trades.map(trade => {
-        const percentComplete = trade.status === 'COMPLETED' ? 100 : 
+        const percentComplete = trade.status === 'COMPLETED' ? 100 :
           trade.status === 'PENDING' ? Math.floor(Math.random() * 90 + 10) : 0;
-        
+
         return {
           ...trade,
           percentComplete,
-          remainingAmount: trade.amount * (1 - percentComplete / 100),
+          remainingAmount: Number(trade.amount) * (1 - percentComplete / 100),
           depositStatus: percentComplete === 100 ? 'complete' : 'pending',
-          confirmationNumber: trade.status === 'COMPLETED' ? 
+          confirmationNumber: trade.status === 'COMPLETED' ?
             `TX${Math.random().toString(36).substr(2, 9).toUpperCase()}` : undefined,
-          executionTime: trade.status === 'COMPLETED' ? 
+          executionTime: trade.status === 'COMPLETED' ?
             Math.floor(Math.random() * 5000 + 1000) : undefined
         };
       });
 
-      setTransactions(updatedTransactions);
+      setTransactions(updatedTransactions as TransactionDetails[]);
     };
 
     updateTransactions();
@@ -59,7 +59,7 @@ export const TransactionMonitor: React.FC = () => {
     const aValue = a[sortField];
     const bValue = b[sortField];
     const direction = sortDirection === 'asc' ? 1 : -1;
-    
+
     if (typeof aValue === 'number' && typeof bValue === 'number') {
       return (aValue - bValue) * direction;
     }
@@ -122,31 +122,31 @@ export const TransactionMonitor: React.FC = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('id')}
               >
                 Transaction ID
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('type')}
               >
                 Type
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('amount')}
               >
                 Amount
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('price')}
               >
                 Price
               </th>
-              <th 
+              <th
                 className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                 onClick={() => handleSort('status')}
               >
@@ -174,7 +174,7 @@ export const TransactionMonitor: React.FC = () => {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {tx.amount.toFixed(4)} ETH
+                  {Number(tx.amount).toFixed(4)} ETH
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   ${tx.price.toFixed(2)}
@@ -190,7 +190,7 @@ export const TransactionMonitor: React.FC = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                    <div 
+                    <div
                       className={`h-2.5 rounded-full ${
                         tx.percentComplete === 100 ? 'bg-green-600' :
                         tx.percentComplete > 50 ? 'bg-blue-600' :

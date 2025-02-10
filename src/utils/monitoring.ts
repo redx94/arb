@@ -1,4 +1,3 @@
-import { Trade, TradeResult, PriceData } from '../types';
 
 export class PerformanceMonitor {
   private static instance: PerformanceMonitor;
@@ -58,7 +57,7 @@ export class PerformanceMonitor {
 
 export class Logger {
   private static instance: Logger;
-  private logBuffer: any[] = [];
+  private logBuffer: { level: string; message: string; meta?: any; timestamp: Date }[] = [];
   private readonly BUFFER_SIZE = 1000;
 
   private constructor() {}
@@ -101,14 +100,14 @@ export class Logger {
     this.bufferLog({ level: 'warn', message, meta });
   }
 
-  private bufferLog(log: any): void {
+  private bufferLog(log: { level: string; message: string; meta?: any; timestamp: Date }): void {
     this.logBuffer.push({ ...log, timestamp: new Date() });
     if (this.logBuffer.length > this.BUFFER_SIZE) {
       this.logBuffer.shift();
     }
   }
 
-  public getLogs(): any[] {
+  public getLogs(): { level: string; message: string; meta?: any; timestamp: Date }[] {
     return [...this.logBuffer];
   }
 

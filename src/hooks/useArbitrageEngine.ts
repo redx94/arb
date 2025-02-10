@@ -10,8 +10,6 @@ export const useArbitrageEngine = () => {
   const [latency, setLatency] = useState<number>(0);
   const [errors, setErrors] = useState<string[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
-  const updatePriceHistory = useTradeStore(state => state.updatePriceHistory);
-  const addTrade = useTradeStore(state => state.addTrade);
 
   const engine = ArbitrageEngine.getInstance();
 
@@ -37,7 +35,7 @@ export const useArbitrageEngine = () => {
       engine.off('warning', () => {});
       engine.off('latencyUpdate', () => {});
     };
-  }, []);
+  }, [engine]);
 
   const start = () => {
     try {

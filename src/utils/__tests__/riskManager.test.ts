@@ -16,18 +16,18 @@ describe('RiskManager', () => {
       id: '1',
       type: 'BUY',
       platform: 'DEX',
-      amount: 1,
-      price: 1000,
+      amount: 1n,
+      price: 1000n,
       timestamp: Date.now(),
       status: 'PENDING'
     };
 
     mockBalance = {
       asset: 'ETH',
-      dexAmount: 10,
-      cexAmount: 10,
+      dexAmount: 10n,
+      cexAmount: 10n,
       wallet: '0x1234567890123456789012345678901234567890',
-      pending: 0
+      pending: 0n
     };
 
     mockPriceData = {
@@ -38,7 +38,7 @@ describe('RiskManager', () => {
   });
 
   it('should validate safe trade', () => {
-    expect(() => 
+    expect(() =>
       riskManager.validateTrade(mockTrade, mockBalance, mockPriceData)
     ).not.toThrow();
   });
@@ -49,7 +49,7 @@ describe('RiskManager', () => {
       dex: mockPriceData.dex * 1.1 // 10% sudden change
     };
 
-    expect(() => 
+    expect(() =>
       riskManager.validateTrade(mockTrade, mockBalance, manipulatedPrice)
     ).toThrow('Potential price manipulation detected');
   });
@@ -57,10 +57,10 @@ describe('RiskManager', () => {
   it('should enforce position size limits', () => {
     const largeTrade = {
       ...mockTrade,
-      amount: 100 // Very large position
+      amount: 100n // Very large position
     };
 
-    expect(() => 
+    expect(() =>
       riskManager.validateTrade(largeTrade, mockBalance, mockPriceData)
     ).toThrow('Trade size exceeds dynamic position limit');
   });
@@ -69,10 +69,10 @@ describe('RiskManager', () => {
     riskManager.setMockMode(true);
     const largeTrade = {
       ...mockTrade,
-      amount: 100 // Would normally be too large
+      amount: 100n // Would normally be too large
     };
 
-    expect(() => 
+    expect(() =>
       riskManager.validateTrade(largeTrade, mockBalance, mockPriceData)
     ).not.toThrow();
   });

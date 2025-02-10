@@ -26,15 +26,15 @@ export class ProfitCalculator {
     amount: number,
     priceData: PriceData
   ): Promise<{
-    profit: ethers.BigNumber;
+    profit: bigint;
     isViable: boolean;
     details: {
-      grossProfit: ethers.BigNumber;
-      totalCosts: ethers.BigNumber;
+      grossProfit: bigint;
+      totalCosts: bigint;
       breakdown: {
-        flashLoanCost: ethers.BigNumber;
-        gasCost: ethers.BigNumber;
-        slippageCost: ethers.BigNumber;
+        flashLoanCost: bigint;
+        gasCost: bigint;
+        slippageCost: bigint;
       };
     };
   }> {
@@ -45,9 +45,9 @@ export class ProfitCalculator {
       const sellPriceBN = ethers.parseEther(sellPrice.toString());
 
       // Calculate gross profit
-      const grossProfit = amountBN
-        .mul(sellPriceBN.sub(buyPriceBN))
-        .div(ethers.parseEther('1'));
+      const grossProfit = (amountBN * 
+        (sellPriceBN - buyPriceBN)) / 
+        ethers.parseEther('1');
 
       // Calculate costs
       const { flashLoanCost, gasCost, slippageCost } = await this.calculateCosts(
@@ -56,19 +56,19 @@ export class ProfitCalculator {
         priceData
       );
 
-      const totalCosts = flashLoanCost.add(gasCost).add(slippageCost);
-      const netProfit = grossProfit.sub(totalCosts);
+      const totalCosts = flashLoanCost + gasCost + slippageCost;
+      const netProfit = grossProfit - totalCosts;
 
       return {
-        profit: netProfit,
-        isViable: netProfit.gt(this.MIN_PROFIT_THRESHOLD),
+        profit: netProfit as bigint,
+        isViable: netProfit > this.MIN_PROFIT_THRESHOLD,
         details: {
-          grossProfit,
-          totalCosts,
+          grossProfit: grossProfit as bigint,
+          totalCosts: totalCosts as bigint,
           breakdown: {
-            flashLoanCost,
-            gasCost,
-            slippageCost
+            flashLoanCost: flashLoanCost as bigint,
+            gasCost: gasCost as bigint,
+            slippageCost: slippageCost as bigint
           }
         }
       };
@@ -79,24 +79,24 @@ export class ProfitCalculator {
   }
 
   private async calculateCosts(
-    amount: ethers.BigNumber,
-    price: ethers.BigNumber,
+    amount: bigint,
+    price: bigint,
     priceData: PriceData
   ): Promise<{
-    flashLoanCost: ethers.BigNumber;
-    gasCost: ethers.BigNumber;
-    slippageCost: ethers.BigNumber;
+  flashLoanCost: bigint;
+  gasCost: bigint;
+  slippageCost: bigint;
   }> {
     // Calculate flash loan fee
-    const flashLoanCost = amount
-      .mul(price)
-      .mul(ethers.parseEther(this.FLASH_LOAN_FEE.toString()))
-      .div(ethers.parseEther('1'));
+      const flashLoanCost = (amount * 
+      price * 
+      ethers.parseEther(this.FLASH_LOAN_FEE.toString())) / 
+      ethers.parseEther('1');
 
     // Estimate gas cost
-    const estimatedGasUnits = ethers.getBigInt('250000'); // Estimated gas units for the transaction
+    const estimatedGasUnits = 250000n; // Use native bigint literal
     const gasPrice = await this.getGasPrice();
-    const gasCost = gasPrice.mul(estimatedGasUnits);
+    const gasCost = gasPrice * estimatedGasUnits;
 
     // Calculate expected slippage
     const slippageCost = this.calculateSlippageCost(amount, price, priceData);
@@ -108,7 +108,7 @@ export class ProfitCalculator {
     };
   }
 
-  private async getGasPrice(): Promise<ethers.BigNumber> {
+  private async getGasPrice(): Promise<bigint> {
     try {
       const provider = new ethers.JsonRpcProvider('http://localhost:8545');
       const gasPrice = await provider.getFeeData();
@@ -126,17 +126,17 @@ export class ProfitCalculator {
   }
 
   private calculateSlippageCost(
-    amount: ethers.BigNumber,
-    price: ethers.BigNumber,
+    amount: bigint,
+    price: bigint,
     priceData: PriceData
-  ): ethers.BigNumber {
+  ): bigint {
     // Calculate slippage based on order size and liquidity
     const baseSlippage = 0.001; // 0.1% base slippage
-    const volumeSlippage = amount.mul(price).div(ethers.parseEther('1000')); // Additional slippage based on volume
+    const volumeSlippage = (amount * price) / ethers.parseEther('1000'); // Additional slippage based on volume
     
-    return amount
-      .mul(price)
-      .mul(ethers.parseEther((baseSlippage + Number(volumeSlippage)).toString()))
-      .div(ethers.parseEther('1'));
+    return (amount *
+      price *
+      ethers.parseEther((baseSlippage + Number(volumeSlippage)).toString())) /
+      ethers.parseEther('1');
   }
 }

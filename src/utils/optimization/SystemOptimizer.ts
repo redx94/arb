@@ -1,4 +1,3 @@
-import { EventEmitter } from 'events';
 import { Logger } from '../monitoring';
 import { CacheManager } from '../cache/cacheManager';
 import type { SystemMetrics, OptimizationAction, ResourceAllocation } from './types';
@@ -7,7 +6,6 @@ const logger = Logger.getInstance();
 
 export class SystemOptimizer {
   private static instance: SystemOptimizer;
-  private readonly eventEmitter = new EventEmitter();
   private readonly metricsCache: CacheManager<SystemMetrics>;
   private readonly METRICS_HISTORY_LIMIT = 1000;
   private readonly UPDATE_INTERVAL = 1000; // 1 second
@@ -40,7 +38,6 @@ export class SystemOptimizer {
         const metrics = await this.collectSystemMetrics();
         const timestamp = Date.now();
         this.metricsCache.set(timestamp.toString(), metrics);
-        this.eventEmitter.emit('metricsUpdated', metrics);
 
         // Analyze trends and patterns
         await this.analyzePerformanceTrends(metrics);
@@ -88,12 +85,12 @@ export class SystemOptimizer {
       if (!this.isRunning) return;
 
       try {
-        const recentMetrics = Array.from(this.metricsCache)
+        const recentMetrics = this.metricsCache.getAllEntries()
           .slice(-this.METRICS_HISTORY_LIMIT)
-          .map(([_, metrics]) => metrics);
+          .map(entry => entry.value);
 
         const anomalies = await this.detectPerformanceAnomalies(recentMetrics);
-        
+
         if (anomalies.length > 0) {
           const actions = await this.generateOptimizationActions(anomalies);
           await this.executeOptimizationActions(actions);
@@ -115,7 +112,7 @@ export class SystemOptimizer {
       try {
         const currentAllocation = await this.getCurrentResourceAllocation();
         const optimizedAllocation = await this.calculateOptimalAllocation(currentAllocation);
-        
+
         if (this.shouldUpdateAllocation(currentAllocation, optimizedAllocation)) {
           await this.applyResourceAllocation(optimizedAllocation);
         }
@@ -127,6 +124,10 @@ export class SystemOptimizer {
     };
 
     optimizeResources();
+  }
+
+  private async analyzePerformanceTrends(metrics: SystemMetrics): Promise<void> {
+    // Implement performance trend analysis logic
   }
 
   private async detectPerformanceAnomalies(
@@ -171,7 +172,6 @@ export class SystemOptimizer {
     for (const action of actions.sort((a, b) => b.priority - a.priority)) {
       try {
         await this.applyOptimizationAction(action);
-        this.eventEmitter.emit('optimizationApplied', action);
         logger.info('Optimization action applied:', action);
       } catch (error) {
         logger.error('Failed to apply optimization action:', error as Error);
@@ -236,25 +236,56 @@ export class SystemOptimizer {
     return { mean, stdDev: Math.sqrt(variance) };
   }
 
-  private getMetricValue(metrics: SystemMetrics, key: keyof SystemMetrics): number {
-    // Implementation would extract the numeric value from the metric
-    return 0;
+private getMetricValue(metrics: SystemMetrics, key: keyof SystemMetrics): number {
+  switch (key) {
+    case 'cpu':
+      return metrics.cpu.usage;
+    case 'memory':
+      return metrics.memory.used;
+    case 'network':
+      return metrics.network.latency;
+    case 'system':
+      return metrics.system.uptime;
+    default:
+      return 0;
+  }
+}
+
+private calculateOptimizationValue(anomaly: { type: string; severity: number; metric: keyof SystemMetrics }): number {
+  // Placeholder logic for optimization value calculation
+  return anomaly.severity * 10;
+}
+
+private async applyOptimizationAction(action: OptimizationAction): Promise<void> {
+  // Placeholder logic for applying optimization action
+  logger.info(`Applying optimization action: ${JSON.stringify(action)}`);
+}
+
+  private async getCurrentResourceAllocation(): Promise<ResourceAllocation> {
+    // Implement logic to get current resource allocation
+    return {
+      cpu: 50,
+      memory: 50,
+      network: 50
+    };
   }
 
-  private calculateOptimizationValue(anomaly: { type: string; severity: number; metric: keyof SystemMetrics }): number {
-    // Implementation would calculate the optimal value based on the anomaly
-    return 0;
+  private async calculateOptimalAllocation(currentAllocation: ResourceAllocation): Promise<ResourceAllocation> {
+    // Implement logic to calculate optimal resource allocation
+    return {
+      cpu: 60,
+      memory: 60,
+      network: 60
+    };
   }
 
-  private async applyOptimizationAction(action: OptimizationAction): Promise<void> {
-    // Implementation would apply the optimization action to the system
+  private shouldUpdateAllocation(currentAllocation: ResourceAllocation, optimizedAllocation: ResourceAllocation): boolean {
+    // Implement logic to determine if allocation should be updated
+    return true;
   }
 
-  public on(event: string, callback: (...args: any[]) => void): void {
-    this.eventEmitter.on(event, callback);
-  }
-
-  public off(event: string, callback: (...args: any[]) => void): void {
-    this.eventEmitter.off(event, callback);
-  }
+private async applyResourceAllocation(allocation: ResourceAllocation): Promise<void> {
+  // Placeholder logic for applying resource allocation
+  logger.info(`Applying resource allocation: ${JSON.stringify(allocation)}`);
+}
 }

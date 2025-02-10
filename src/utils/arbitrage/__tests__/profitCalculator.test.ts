@@ -25,7 +25,7 @@ describe('ProfitCalculator', () => {
     );
 
     expect(result.isViable).toBe(true);
-    expect(result.profit.gt(0)).toBe(true);
+    expect(result.profit > 0).toBe(true);
   });
 
   it('should include all costs in calculation', async () => {
@@ -36,9 +36,9 @@ describe('ProfitCalculator', () => {
       mockPriceData
     );
 
-    expect(result.details.breakdown.flashLoanCost.gt(0)).toBe(true);
-    expect(result.details.breakdown.gasCost.gt(0)).toBe(true);
-    expect(result.details.breakdown.slippageCost.gt(0)).toBe(true);
+    expect(result.details.breakdown.flashLoanCost > 0).toBe(true);
+    expect(result.details.breakdown.gasCost > 0).toBe(true);
+    expect(result.details.breakdown.slippageCost > 0).toBe(true);
   });
 
   it('should reject unprofitable trades', async () => {
@@ -61,6 +61,6 @@ describe('ProfitCalculator', () => {
     );
 
     expect(() => result.profit.toString()).not.toThrow();
-    expect(result.details.grossProfit.gt(0)).toBe(true);
+    expect(result.details.grossProfit > 0).toBe(true);
   });
 });

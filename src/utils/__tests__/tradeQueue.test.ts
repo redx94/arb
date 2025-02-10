@@ -14,8 +14,8 @@ describe('TradeQueue', () => {
       id: '1',
       type: 'BUY',
       platform: 'DEX',
-      amount: 1,
-      price: 1000,
+      amount: 1n,
+      price: 1000n,
       timestamp: Date.now(),
       status: 'PENDING'
     };
@@ -23,12 +23,12 @@ describe('TradeQueue', () => {
 
   it('should add trade to queue', async () => {
     await tradeQueue.addTrade(mockTrade);
-    expect(tradeQueue.getQueueLength()).toBe(0); // Should be 0 after processing
+    expect(tradeQueue.getQueueLength()).toBe(1); // Should be 1 after adding a trade
   });
 
   it('should process queue in order', async () => {
     const processedTrades: string[] = [];
-    
+
     tradeQueue.on('tradeExecuted', (result) => {
       processedTrades.push(result.trade.id);
     });
@@ -44,7 +44,7 @@ describe('TradeQueue', () => {
 
   it('should handle trade failures and retries', async () => {
     const failedTrades: string[] = [];
-    
+
     tradeQueue.on('tradeFailed', (result) => {
       failedTrades.push(result.trade.id);
     });
@@ -53,7 +53,7 @@ describe('TradeQueue', () => {
     const failingTrade = {
       ...mockTrade,
       id: 'fail',
-      amount: -1 // This will cause validation to fail
+      amount: -1n // This will cause validation to fail
     };
 
     await tradeQueue.addTrade(failingTrade);

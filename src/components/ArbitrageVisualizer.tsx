@@ -19,16 +19,16 @@ export const ArbitrageVisualizer: React.FC = () => {
     description: 'Standard market conditions with typical volatility'
   });
 
-  useEffect(() => {
-    const priceFeed = PriceFeed.getInstance();
-    priceFeed.setMockMode(useMockData);
+useEffect(() => {
+  const priceFeed = PriceFeed.getInstance();
+  priceFeed.setMockMode(useMockData);
 
-    const unsubscribe = priceFeed.subscribe((newPrice) => {
-      setPriceHistory(prev => [...prev.slice(-50), newPrice]);
-    });
+  const unsubscribe = priceFeed.subscribe((newPrice) => {
+    setPriceHistory(prev => [...prev.slice(-50), newPrice]);
+  });
 
-    return () => unsubscribe();
-  }, [useMockData]);
+  return () => unsubscribe();
+}, [useMockData, priceFeed]);
 
   return (
     <div className="space-y-8">
@@ -42,23 +42,23 @@ export const ArbitrageVisualizer: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <PriceDisplay 
-          latestPrice={priceHistory[priceHistory.length - 1]} 
+        <PriceDisplay
+          latestPrice={priceHistory[priceHistory.length - 1]}
         />
-        <ScenarioLoader 
+        <ScenarioLoader
           onScenarioChange={setCurrentScenario}
           currentScenario={currentScenario}
           disabled={!useMockData}
         />
       </div>
-      
+
       <LineChart data={priceHistory} />
-      
-      <TradeExecutor 
+
+      <TradeExecutor
         priceData={priceHistory[priceHistory.length - 1]}
         onTradeComplete={(trade) => setTrades(prev => [...prev, trade])}
       />
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <MevRiskMatrix />
         <ArbitrageWalkthrough />

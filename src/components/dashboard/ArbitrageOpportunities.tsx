@@ -44,20 +44,20 @@ export const ArbitrageOpportunities: React.FC = () => {
             id: 'uniswap-sushi',
             fromDex: 'Uniswap V3',
             toDex: 'SushiSwap',
-            spread: Math.abs(latestPrice.dex - latestPrice.cex) / latestPrice.cex * 100,
+            spread: Number((Math.abs(latestPrice.dex - latestPrice.cex) * 100n) / BigInt(latestPrice.cex)),
             volume: '125K',
             risk: 'Low',
-            estimatedProfit: Math.abs(latestPrice.dex - latestPrice.cex) * 1.5,
+            estimatedProfit: Number((Math.abs(latestPrice.dex - latestPrice.cex) * 150n) / 100n),
             timestamp
           },
           {
             id: 'curve-balancer',
             fromDex: 'Curve',
             toDex: 'Balancer',
-            spread: Math.abs(latestPrice.dex - latestPrice.cex) * 0.75 / latestPrice.cex * 100,
+            spread: Number((Math.abs(latestPrice.dex - latestPrice.cex) * 75n) / BigInt(latestPrice.cex)),
             volume: '250K',
             risk: 'Medium',
-            estimatedProfit: Math.abs(latestPrice.dex - latestPrice.cex) * 0.85,
+            estimatedProfit: Number((Math.abs(latestPrice.dex - latestPrice.cex) * 85n) / 100n),
             timestamp
           }
         ];
@@ -65,14 +65,14 @@ export const ArbitrageOpportunities: React.FC = () => {
         // Update market conditions based on latest data
         const newMarketConditions = {
           gasPrice: Math.floor(30 + Math.random() * 30), // Simulate gas price changes
-          networkLoad: calculateNetworkLoad(latestPrice)
+          networkLoad: calculateNetworkLoad({ dex: BigInt(latestPrice.dex), cex: BigInt(latestPrice.cex) })
         };
 
         setOpportunities(newOpportunities);
         setMarketConditions(newMarketConditions);
         setLastUpdate(timestamp);
       } catch (error) {
-        logger.error('Failed to calculate arbitrage opportunities:', error);
+        logger.error('Failed to calculate arbitrage opportunities:', error as Error);
       }
     };
 
@@ -90,12 +90,13 @@ export const ArbitrageOpportunities: React.FC = () => {
     return () => {
       unsubscribe();
     };
-  }, [priceHistory]);
+  }, [priceHistory, priceFeed]);
 
-  const calculateNetworkLoad = (price: { dex: number; cex: number }): 'Low' | 'Medium' | 'High' => {
-    const spread = Math.abs(price.dex - price.cex) / price.cex;
-    if (spread > 0.02) return 'High';
-    if (spread > 0.01) return 'Medium';
+  const calculateNetworkLoad = (price: { dex: bigint; cex: bigint }): 'Low' | 'Medium' | 'High' => {
+    const spread = BigInt(Math.abs(price.dex - price.cex));
+    const spreadPercentage = (spread * 100n) / BigInt(price.cex);
+    if (spreadPercentage > 2n) return 'High';
+    if (spreadPercentage > 1n) return 'Medium';
     return 'Low';
   };
 
@@ -122,7 +123,7 @@ export const ArbitrageOpportunities: React.FC = () => {
               </div>
               <span className="text-sm text-gray-500">Volume: ${opp.volume}</span>
             </div>
-            
+
             <div className="grid grid-cols-3 gap-4 mt-3">
               <div>
                 <span className="text-sm text-gray-600">Spread</span>
@@ -132,7 +133,7 @@ export const ArbitrageOpportunities: React.FC = () => {
                 <span className="text-sm text-gray-600">Risk Level</span>
                 <p className="font-medium">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                    opp.risk === 'Low' 
+                    opp.risk === 'Low'
                       ? 'bg-green-100 text-green-800'
                       : 'bg-yellow-100 text-yellow-800'
                   }`}>

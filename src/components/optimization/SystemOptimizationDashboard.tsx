@@ -6,11 +6,11 @@ import type { SystemMetrics, OptimizationAction } from '../../utils/optimization
 export const SystemOptimizationDashboard: React.FC = () => {
   const [metrics, setMetrics] = React.useState<SystemMetrics | null>(null);
   const [recentActions, setRecentActions] = React.useState<OptimizationAction[]>([]);
-  const [anomalies, setAnomalies] = React.useState<Array<{
-    type: string;
-    severity: number;
-    metric: string;
-  }>>([]);
+const [anomalies] = React.useState<Array<{
+  type: string;
+  severity: number;
+  metric: string;
+}>>([]);
 
   React.useEffect(() => {
     const optimizer = SystemOptimizer.getInstance();

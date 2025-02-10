@@ -17,7 +17,7 @@ describe('PathFinder', () => {
 
   it('should find optimal path when profitable opportunity exists', async () => {
     const path = await pathFinder.findOptimalPath('DEX_A', 1.0, mockPriceData);
-    
+
     expect(path).not.toBeNull();
     expect(path?.expectedProfit).toBeGreaterThan(0);
     expect(path?.nodes.length).toBeGreaterThanOrEqual(2);

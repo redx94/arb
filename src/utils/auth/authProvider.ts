@@ -39,7 +39,7 @@ export const useAuth = create<AuthState>((set) => ({
 
       const { token, user } = await response.json();
       localStorage.setItem('token', token);
-      
+
       set({ user, token, isAuthenticated: true });
       logger.info('User logged in successfully', { userId: user.id });
     } catch (error) {
@@ -74,7 +74,7 @@ export const useAuth = create<AuthState>((set) => ({
 
       const { token } = await response.json();
       localStorage.setItem('token', token);
-      
+
       const user = jwtDecode(token) as User;
       set({ token, user, isAuthenticated: true });
     } catch (error) {

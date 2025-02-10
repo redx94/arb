@@ -42,7 +42,7 @@ export class RiskManager {
     }
 
     const totalPortfolioValue = this.calculatePortfolioValue(balance, priceData);
-    const tradeValue = trade.amount * trade.price;
+    const tradeValue = Number(trade.amount) * trade.price;
     
     // Enhanced position size check with dynamic limits
     const dynamicPositionLimit = this.calculateDynamicPositionLimit(totalPortfolioValue);
@@ -53,7 +53,7 @@ export class RiskManager {
     // Enhanced stop loss with market volatility consideration
     const volatilityAdjustedStopLoss = this.calculateVolatilityAdjustedStopLoss(priceData);
     const potentialLoss = tradeValue * volatilityAdjustedStopLoss;
-    const availableBalance = balance.dexAmount * priceData.dex;
+    const availableBalance = Number(balance.dexAmount) * priceData.dex;
 
     if (!this.mockMode && potentialLoss > availableBalance * 2) {
       throw new Error('Insufficient balance for volatility-adjusted stop loss');
@@ -112,6 +112,23 @@ export class RiskManager {
     const volatility = this.calculateHistoricalVolatility();
     return this.stopLossPercentage * (1 + volatility);
   }
+
+private calculatePortfolioValue(balance: Balance, priceData: PriceData): number {
+  const dexValue = Number(balance.dexAmount) * priceData.dex;
+  const cexValue = Number(balance.cexAmount) * priceData.cex;
+  return dexValue + cexValue;
+}
+
+private calculateCurrentDrawdown(balance: Balance, priceData: PriceData): number {
+  const currentValue = this.calculatePortfolioValue(balance, priceData);
+  const trailingHighWaterMark = this.getTrailingHighWaterMark();
+  return (trailingHighWaterMark - currentValue) / trailingHighWaterMark;
+}
+
+private getTrailingHighWaterMark(): number {
+  // Implement logic to get the trailing high water mark
+  return 100000; // Example value
+}
 
   private calculateHistoricalVolatility(): number {
     if (this.priceHistory.length < 2) return 0;

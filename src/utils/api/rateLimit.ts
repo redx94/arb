@@ -5,7 +5,7 @@ export const rateLimit = (limit: number, interval: number) => {
     async acquire(): Promise<void> {
       const now = Date.now();
       requests.push(now);
-      
+
       // Remove expired timestamps
       while (requests.length > 0 && requests[0] < now - interval) {
         requests.shift();

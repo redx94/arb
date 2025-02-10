@@ -59,7 +59,7 @@ export class PerformanceCache<T> {
 
   private set(key: string, value: T): void {
     this.evictStaleEntries();
-    
+
     if (this.cache.size >= this.config.maxSize) {
       this.evictLeastUsed();
     }

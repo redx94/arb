@@ -23,16 +23,12 @@ export class ArbitrageEngine {
   private readonly liquidityAnalyzer = LiquidityAnalyzer.getInstance();
   private readonly performanceMonitor = PerformanceMonitor.getInstance();
   private readonly errorHandler = ErrorHandler.getInstance();
-  private readonly priceCache = new PerformanceCache<PriceData>({ ttl: 1000 });
-  
+
   private readonly MIN_PROFIT_THRESHOLD = 0.002; // 0.2%
   private readonly MAX_EXECUTION_TIME = 500; // 500ms
-  private readonly TARGET_SUCCESS_RATE = 0.95; // 95%
   private readonly MAX_SLIPPAGE = 0.005; // 0.5%
   private isRunning = false;
   private priceUpdateHandler: ((data: PriceData) => void) | null = null;
-  private tradeExecutedHandler: ((result: { trade: Trade }) => void) | null = null;
-  private tradeFailedHandler: ((error: Error) => void) | null = null;
 
   private constructor() {
     this.setupEventListeners();
@@ -49,15 +45,11 @@ export class ArbitrageEngine {
     try {
       // Store handler references for cleanup
       this.priceUpdateHandler = this.onPriceUpdate.bind(this);
-      this.tradeExecutedHandler = this.onTradeExecuted.bind(this);
-      this.tradeFailedHandler = this.onTradeFailed.bind(this);
 
       // Subscribe with stored references
       this.priceFeed.subscribe(this.priceUpdateHandler);
-      this.tradeQueue.on('tradeExecuted', this.tradeExecutedHandler);
-      this.tradeQueue.on('tradeFailed', this.tradeFailedHandler);
     } catch (error) {
-      logger.error('Failed to setup event listeners:', error);
+      logger.error('Failed to setup event listeners:', error as Error);
       throw error;
     }
   }
@@ -66,7 +58,7 @@ export class ArbitrageEngine {
     if (!this.isRunning) return;
 
     this.performanceMonitor.startTimer('priceAnalysis');
-    
+
     try {
       const arbitrageOpportunity = await this.errorHandler.withRetry(
         () => this.analyzeArbitrageOpportunity(priceData),
@@ -77,7 +69,7 @@ export class ArbitrageEngine {
         await this.executeArbitrage(arbitrageOpportunity);
       }
     } catch (error) {
-      logger.error('Price update handling failed:', error);
+      logger.error('Price update handling failed:', error as Error);
       this.eventEmitter.emit('error', error);
     } finally {
       this.performanceMonitor.endTimer('priceAnalysis');
@@ -94,7 +86,7 @@ export class ArbitrageEngine {
 
     // Use WETH address for liquidity analysis
     const WETH_ADDRESS = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2';
-    
+
     // Calculate optimal trade size based on liquidity
     const liquidityAnalysis = await this.liquidityAnalyzer.analyzeLiquidity(
       WETH_ADDRESS,
@@ -107,7 +99,7 @@ export class ArbitrageEngine {
     }
 
     const isDexCheaper = priceData.dex < priceData.cex;
-    
+
     return {
       id: crypto.randomUUID(),
       type: isDexCheaper ? 'BUY' : 'SELL',
@@ -124,17 +116,17 @@ export class ArbitrageEngine {
 
     try {
       // Validate with risk manager
-      const mockBalance = { 
-        dexAmount: ethers.parseEther('10'), 
-        cexAmount: ethers.parseEther('10'), 
-        asset: 'ETH', 
-        wallet: '', 
+      const mockBalance = {
+        dexAmount: ethers.parseEther('10'),
+        cexAmount: ethers.parseEther('10'),
+        asset: 'ETH',
+        wallet: '',
         pending: ethers.parseEther('0')
       };
 
       if (!this.riskManager.validateTrade(
-        trade, 
-        mockBalance, 
+        trade,
+        mockBalance,
         await this.priceFeed.getCurrentPrice()
       )) {
         return;
@@ -150,28 +142,24 @@ export class ArbitrageEngine {
         deadline: Math.floor(Date.now() / 1000) + 300 // 5 minutes
       };
 
-      await this.flashLoanHandler.validateFlashLoan(flashLoanParams);
-      
+      await this.flashLoanHandler.validateFlashLoan({
+        ...flashLoanParams,
+        protocol: flashLoanParams.protocol as 'AAVE' | 'DYDX' | 'UNISWAP',
+      });
+
       // Add trade to queue
       await this.tradeQueue.addTrade(trade);
     } catch (error) {
-      logger.error('Trade execution failed:', error);
+      logger.error('Trade execution failed:', error as Error);
       this.eventEmitter.emit('error', error);
     } finally {
       this.performanceMonitor.endTimer('tradeExecution');
     }
-  }
 
-  private onTradeExecuted(result: { trade: Trade }): void {
-    const executionTime = this.performanceMonitor.getMetrics('tradeExecution').avg;
-    if (executionTime > this.MAX_EXECUTION_TIME) {
+    const executionTime = this.performanceMonitor.getMetrics('tradeExecution')?.avg;
+    if (executionTime && executionTime > this.MAX_EXECUTION_TIME) {
       this.eventEmitter.emit('warning', 'Execution time exceeded threshold');
     }
-  }
-
-  private onTradeFailed(error: Error): void {
-    logger.error('Trade failed:', error);
-    this.eventEmitter.emit('error', error);
   }
 
   public start(): void {
@@ -198,19 +186,9 @@ export class ArbitrageEngine {
         this.priceUpdateHandler = null;
       }
 
-      if (this.tradeExecutedHandler) {
-        this.tradeQueue.off('tradeExecuted', this.tradeExecutedHandler);
-        this.tradeExecutedHandler = null;
-      }
-
-      if (this.tradeFailedHandler) {
-        this.tradeQueue.off('tradeFailed', this.tradeFailedHandler);
-        this.tradeFailedHandler = null;
-      }
-
       this.eventEmitter.emit('stopped');
     } catch (error) {
-      logger.error('Error stopping engine:', error);
+      logger.error('Error stopping engine:', error as Error);
       throw error;
     }
   }

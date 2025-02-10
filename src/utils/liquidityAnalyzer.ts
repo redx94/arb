@@ -30,7 +30,7 @@ export class LiquidityAnalyzer {
         ? ethers.parseEther(config.minLiquidity)
         : ethers.parseEther('100'); // 100 ETH default
     } catch (error) {
-      logger.error('Failed to initialize MIN_LIQUIDITY_DEPTH:', error);
+      logger.error('Failed to initialize MIN_LIQUIDITY_DEPTH:', error as Error);
       this.MIN_LIQUIDITY_DEPTH = 0n; // Safe fallback
     }
   }
@@ -68,7 +68,7 @@ export class LiquidityAnalyzer {
           ? ethers.parseEther(amount)
           : ethers.parseEther(amount.toString());
       } catch (error) {
-        logger.error('Failed to parse amount:', error);
+        logger.error('Failed to parse amount:', error as Error);
         throw new Error('Invalid amount format');
       }
 
@@ -89,7 +89,7 @@ export class LiquidityAnalyzer {
         timestamp: Date.now()
       };
     } catch (error) {
-      logger.error('Liquidity analysis failed:', error);
+      logger.error('Liquidity analysis failed:', error as Error);
       // Return safe fallback values
       return {
         safe: false,
@@ -127,14 +127,14 @@ export class LiquidityAnalyzer {
           const balance = await tokenContract.balanceOf(this.WETH_ADDRESS);
           return balance > 0n ? balance : this.MIN_LIQUIDITY_DEPTH;
         } catch (error) {
-          logger.error('Failed to fetch token liquidity:', error);
+          logger.error('Failed to fetch token liquidity:', error as Error);
           return this.MIN_LIQUIDITY_DEPTH;
         }
       }
 
       return this.MIN_LIQUIDITY_DEPTH;
     } catch (error) {
-      logger.error('Failed to get liquidity depth:', error);
+      logger.error('Failed to get liquidity depth:', error as Error);
       return 0n; // Safe fallback
     }
   }
@@ -176,7 +176,7 @@ export class LiquidityAnalyzer {
 
       return impactNumber;
     } catch (error) {
-      logger.error('Price impact calculation failed:', error);
+      logger.error('Price impact calculation failed:', error as Error);
       return 1; // Return 100% impact on error as a safety measure
     }
   }

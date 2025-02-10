@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Shield, AlertTriangle, TrendingDown, DollarSign } from 'lucide-react';
 
 export const RiskManagement: React.FC = () => {
-  const [maxDrawdown, setMaxDrawdown] = useState(20); // 20%
-  const [positionLimit, setPositionLimit] = useState(5); // 5 ETH
-  const [stopLoss, setStopLoss] = useState(2); // 2%
-  const [emergencyShutdown, setEmergencyShutdown] = useState(false);
+  const [maxDrawdown, setMaxDrawdown] = useState<number>(20); // 20%
+  const [positionLimit, setPositionLimit] = useState<number>(5); // 5 ETH
+  const [stopLoss, setStopLoss] = useState<number>(2); // 2%
+  const [emergencyShutdown, setEmergencyShutdown] = useState<boolean>(false);
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">

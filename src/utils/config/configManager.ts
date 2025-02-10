@@ -89,7 +89,7 @@ class ConfigManager {
     return this.config;
   }
 
-  public getProtocolConfig(): ProtocolAddresses {
+  public getProtocolConfig(): any {
     if (!this.config) {
       throw new Error('Config not initialized');
     }

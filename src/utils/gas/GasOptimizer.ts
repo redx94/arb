@@ -13,9 +13,9 @@ interface GasHistory {
 }
 
 interface GasStrategy {
-  baseGas: ethers.BigNumber;
-  priorityFee: ethers.BigNumber;
-  gasLimit: ethers.BigNumber;
+  baseGas: ethers.BigNumberish;
+  priorityFee: ethers.BigNumberish;
+  gasLimit: ethers.BigNumberish;
   waitBlocks: number;
 }
 
@@ -26,8 +26,8 @@ export class GasOptimizer {
   private readonly HISTORY_WINDOW = 1000; // Number of blocks to analyze
   private readonly MIN_PROFIT_MARGIN = 0.02; // 2% minimum profit after gas
   private readonly MAX_PRIORITY_FEE = ethers.parseUnits('3', 'gwei');
-  private readonly BASE_GAS_LIMIT = ethers.getBigInt('300000');
-  
+  private readonly BASE_GAS_LIMIT = ethers.BigNumber.from('300000');
+
   private constructor() {
     this.gasHistory = new CacheManager<GasHistory>({ ttl: 3600000 }); // 1 hour TTL
     this.startGasMonitoring();
@@ -43,7 +43,7 @@ export class GasOptimizer {
   private async startGasMonitoring() {
     try {
       const provider = new ethers.JsonRpcProvider(import.meta.env.VITE_RPC_URL);
-      
+
       provider.on('block', async (blockNumber) => {
         const feeData = await provider.getFeeData();
         const timestamp = Date.now();
@@ -63,7 +63,7 @@ export class GasOptimizer {
   }
 
   public async calculateOptimalGasStrategy(
-    expectedProfit: ethers.BigNumber,
+    expectedProfit: ethers.BigNumberish,
     complexity: 'low' | 'medium' | 'high' = 'medium'
   ): Promise<GasStrategy> {
     try {
@@ -74,8 +74,8 @@ export class GasOptimizer {
       const waitBlocks = this.determineWaitBlocks(gasStats);
 
       // Validate that gas costs don't eat too much into profits
-      const totalGasCost = baseGas.add(priorityFee).mul(gasLimit);
-      const minProfit = expectedProfit.mul(ethers.parseUnits(this.MIN_PROFIT_MARGIN.toString(), 'ether'));
+      const totalGasCost = ethers.BigNumber.from(baseGas).add(priorityFee).mul(gasLimit);
+      const minProfit = ethers.BigNumber.from(expectedProfit).mul(ethers.parseUnits(this.MIN_PROFIT_MARGIN.toString(), 'ether'));
 
       if (totalGasCost.gt(minProfit)) {
         throw new Error('Gas costs exceed minimum profit threshold');
@@ -106,15 +106,15 @@ export class GasOptimizer {
 
     const median = recentHistory[Math.floor(recentHistory.length / 2)];
     const percentile90 = recentHistory[Math.floor(recentHistory.length * 0.9)];
-    
+
     // Calculate trend
     const trend = this.calculateTrend(recentHistory);
-    
+
     // Calculate volatility
     const mean = recentHistory.reduce((a, b) => a + b, 0) / recentHistory.length;
-    const volatility = Math.sqrt(
-      recentHistory.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / recentHistory.length
-    );
+const volatility = Math.sqrt(
+  recentHistory.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / recentHistory.length
+);
 
     return { median, percentile90, trend, volatility };
   }
@@ -122,10 +122,10 @@ export class GasOptimizer {
   private calculateTrend(history: number[]): 'increasing' | 'decreasing' | 'stable' {
     const firstHalf = history.slice(0, Math.floor(history.length / 2));
     const secondHalf = history.slice(Math.floor(history.length / 2));
-    
+
     const firstMean = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
     const secondMean = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
-    
+
     const difference = secondMean - firstMean;
     const threshold = firstMean * 0.05; // 5% threshold
 
@@ -139,43 +139,43 @@ export class GasOptimizer {
     percentile90: number;
     trend: string;
     volatility: number;
-  }): ethers.BigNumber {
-    let baseGas = ethers.getBigInt(gasStats.median);
+  }): ethers.BigNumberish {
+    let baseGas = ethers.BigNumber.from(gasStats.median);
 
     // Adjust based on trend and volatility
     if (gasStats.trend === 'increasing') {
-      baseGas = baseGas + (baseGas * ethers.getBigInt(10)) / ethers.getBigInt(100); // Add 10%
+      baseGas = baseGas.add(baseGas.mul(10).div(100)); // Add 10%
     }
-    
-    // Add volatility buffer
-    const volatilityBuffer = (baseGas * ethers.getBigInt(Math.ceil(gasStats.volatility * 100))) / ethers.getBigInt(1000);
-    baseGas = baseGas + volatilityBuffer;
 
-    return ethers.BigNumber.from(baseGas);
+    // Add volatility buffer
+    const volatilityBuffer = baseGas.mul(Math.ceil(gasStats.volatility * 100)).div(1000);
+    baseGas = baseGas.add(volatilityBuffer);
+
+    return baseGas;
   }
 
   private calculatePriorityFee(
     gasStats: { median: number; percentile90: number; trend: string; volatility: number },
-    expectedProfit: ethers.BigNumber
-  ): ethers.BigNumber {
+    expectedProfit: ethers.BigNumberish
+  ): ethers.BigNumberish {
     // Start with 10% of base fee as priority fee
-    let priorityFee = ethers.getBigInt(gasStats.median) / ethers.getBigInt(10);
+    let priorityFee = ethers.BigNumber.from(gasStats.median).div(10);
 
     // Adjust based on expected profit
-    const profitBasedFee = (expectedProfit * ethers.getBigInt(5)) / ethers.getBigInt(1000); // 0.5% of profit
-    priorityFee = ethers.min(priorityFee + profitBasedFee, this.MAX_PRIORITY_FEE);
+    const profitBasedFee = ethers.BigNumber.from(expectedProfit).mul(5).div(1000); // 0.5% of profit
+    priorityFee = priorityFee.add(profitBasedFee).min(this.MAX_PRIORITY_FEE);
 
-    return ethers.BigNumber.from(priorityFee);
+    return priorityFee;
   }
 
-  private calculateGasLimit(complexity: 'low' | 'medium' | 'high'): ethers.BigNumber {
-    const multiplier = {
-      low: ethers.getBigInt(1),
-      medium: ethers.getBigInt(2),
-      high: ethers.getBigInt(3)
-    }[complexity];
+  private calculateGasLimit(complexity: 'low' | 'medium' | 'high'): ethers.BigNumberish {
+const multiplier = {
+  low: ethers.BigNumber.from(1),
+  medium: ethers.BigNumber.from(2),
+  high: ethers.BigNumber.from(3)
+}[complexity];
 
-    return ethers.BigNumber.from(this.BASE_GAS_LIMIT * multiplier);
+    return ethers.BigNumber.from(this.BASE_GAS_LIMIT).mul(multiplier);
   }
 
   private determineWaitBlocks(gasStats: {
@@ -191,19 +191,19 @@ export class GasOptimizer {
 
   public async estimateFlashLoanGas(
     tokenAddress: string,
-    amount: ethers.BigNumber,
+    amount: ethers.BigNumberish,
     steps: number
-  ): Promise<ethers.BigNumber> {
+  ): Promise<ethers.BigNumberish> {
     // Base cost for flash loan
-    let estimate = this.BASE_GAS_LIMIT;
-    
-    // Add gas for each step in the arbitrage
-    estimate = estimate + (ethers.getBigInt(100000) * ethers.getBigInt(steps));
-    
-    // Add overhead for token transfers
-    estimate = estimate + ethers.getBigInt(50000);
+    let estimate = ethers.BigNumber.from(this.BASE_GAS_LIMIT);
 
-    return ethers.BigNumber.from(estimate);
+    // Add gas for each step in the arbitrage
+    estimate = estimate.add(ethers.BigNumber.from(100000).mul(steps));
+
+    // Add overhead for token transfers
+    estimate = estimate.add(ethers.BigNumber.from(50000));
+
+    return estimate;
   }
 
   public on(event: string, callback: (...args: any[]) => void): void {

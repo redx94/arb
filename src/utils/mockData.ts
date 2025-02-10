@@ -51,7 +51,7 @@ export const generateMarketDepth = (basePrice: number, depth: number = 10) => {
   return orders;
 };
 
-export const calculateSlippage = (orderSize: number, marketDepth: any[]) => {
+export const calculateSlippage = (orderSize: number, marketDepth: { type: string; price: number; amount: number }[]) => {
   let remainingSize = orderSize;
   let totalCost = 0;
   let avgPrice = 0;

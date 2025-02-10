@@ -3,7 +3,7 @@ import { Logger } from '../monitoring';
 const logger = Logger.getInstance();
 
 export const securityHeaders = {
-  'Content-Security-Policy': 
+  'Content-Security-Policy':
     "default-src 'self'; " +
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
     "style-src 'self' 'unsafe-inline'; " +

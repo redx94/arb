@@ -20,7 +20,7 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
 
   const calculateEstimatedSlippage = (orderSize: number) => {
     if (!priceData) return;
-    const dexMarketDepth = generateMarketDepth(priceData.dex);
+    const dexMarketDepth = generateMarketDepth(Number(priceData.dex));
     const { slippage } = calculateSlippage(orderSize, dexMarketDepth);
     setEstimatedSlippage(slippage);
   };
@@ -34,9 +34,9 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
     const startTime = performance.now();
 
     try {
-      const isDexCheaper = priceData.dex < priceData.cex;
-      const priceDiff = Math.abs(priceData.dex - priceData.cex);
-      const profitPotential = (priceDiff / Math.min(priceData.dex, priceData.cex)) * 100;
+      const isDexCheaper = Number(priceData.dex) < Number(priceData.cex);
+      const priceDiff = Math.abs(Number(priceData.dex) - Number(priceData.cex));
+      const profitPotential = (priceDiff / Math.min(Number(priceData.dex), Number(priceData.cex))) * 100;
 
       if (profitPotential < 1) {
         throw new Error('Insufficient price difference for profitable arbitrage');
@@ -46,7 +46,7 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
         'BUY',
         isDexCheaper ? 'DEX' : 'CEX',
         amount,
-        isDexCheaper ? priceData.dex : priceData.cex
+        isDexCheaper ? Number(priceData.dex) : Number(priceData.cex)
       );
 
       if (!buyResult.success) {
@@ -57,7 +57,7 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
         'SELL',
         isDexCheaper ? 'CEX' : 'DEX',
         amount,
-        isDexCheaper ? priceData.cex : priceData.dex
+        isDexCheaper ? Number(priceData.cex) : Number(priceData.dex)
       );
 
       if (!sellResult.success) {
@@ -70,17 +70,17 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
       if (buyResult.trade && sellResult.trade) {
         const buyTradeDetails: TradeDetails = {
           ...buyResult.trade,
-          profitLoss: -buyResult.trade.amount * buyResult.trade.price,
-          effectivePrice: buyResult.trade.price * (1 + (buyResult.trade.slippage || 0)),
+          profitLoss: -Number(buyResult.trade.amount) * Number(buyResult.trade.price),
+          effectivePrice: Number(buyResult.trade.price) * (1 + (buyResult.trade.slippage || 0)),
           priceImpact: buyResult.trade.slippage || 0,
           executionTime,
           warnings: []
         };
 
-        const sellTradeDetails: TradeDetails = {
+        const sellTradeDetails: typeof TradeDetails = {
           ...sellResult.trade,
-          profitLoss: sellResult.trade.amount * sellResult.trade.price,
-          effectivePrice: sellResult.trade.price * (1 - (sellResult.trade.slippage || 0)),
+          profitLoss: Number(sellResult.trade.amount) * Number(sellResult.trade.price),
+          effectivePrice: Number(sellResult.trade.price) * (1 - (sellResult.trade.slippage || 0)),
           priceImpact: sellResult.trade.slippage || 0,
           executionTime,
           warnings: []
@@ -101,8 +101,8 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
 
   const getTotalBalanceUSD = (balance: Balance) => {
     if (!priceData) return 0;
-    const dexValue = balance.dexAmount * priceData.dex;
-    const cexValue = balance.cexAmount * priceData.cex;
+    const dexValue = Number(balance.dexAmount) * Number(priceData.dex);
+    const cexValue = Number(balance.cexAmount) * Number(priceData.cex);
     return dexValue + cexValue;
   };
 
@@ -118,7 +118,7 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
             Wallet Balances
           </h2>
         </div>
-        
+
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {balances.map((balance) => (
@@ -129,34 +129,34 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
                     Total Value: ${getTotalBalanceUSD(balance).toFixed(2)}
                   </span>
                 </div>
-                
+
                 <div className="space-y-4">
                   <div className="bg-white rounded-lg p-4 shadow-sm">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">DEX Balance</span>
-                      <span className="font-medium">{balance.dexAmount.toFixed(4)} {balance.asset}</span>
+                      <span className="font-medium">{Number(balance.dexAmount).toFixed(4)} {balance.asset}</span>
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
-                      ≈ ${(balance.dexAmount * priceData.dex).toFixed(2)}
+                      ≈ ${(Number(balance.dexAmount) * Number(priceData.dex)).toFixed(2)}
                     </div>
                   </div>
-                  
+
                   <div className="bg-white rounded-lg p-4 shadow-sm">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">CEX Balance</span>
-                      <span className="font-medium">{balance.cexAmount.toFixed(4)} {balance.asset}</span>
+                      <span className="font-medium">{Number(balance.cexAmount).toFixed(4)} {balance.asset}</span>
                     </div>
                     <div className="text-sm text-gray-500 mt-1">
-                      ≈ ${(balance.cexAmount * priceData.cex).toFixed(2)}
+                      ≈ ${(Number(balance.cexAmount) * Number(priceData.cex)).toFixed(2)}
                     </div>
                   </div>
-                  
-                  {balance.pending > 0 && (
+
+                  {Number(balance.pending) > 0 && (
                     <div className="bg-yellow-50 rounded-lg p-4">
                       <div className="flex justify-between items-center">
                         <span className="text-yellow-700">Pending</span>
                         <span className="font-medium text-yellow-700">
-                          {balance.pending.toFixed(4)} {balance.asset}
+                          {Number(balance.pending).toFixed(4)} {balance.asset}
                         </span>
                       </div>
                     </div>
@@ -176,7 +176,7 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
             Execute Trade
           </h2>
         </div>
-        
+
         <div className="p-6">
           <div className="space-y-6">
             <div>

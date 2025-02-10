@@ -15,13 +15,13 @@ export class GasAwareFlashLoan {
 
   public async validateAndOptimize(params: FlashLoanParams): Promise<{
     isViable: boolean;
-    optimizedGas: ethers.BigNumber;
-    expectedProfit: ethers.BigNumber;
+    optimizedGas: bigint;
+    expectedProfit: bigint;
     recommendation: string;
   }> {
     try {
       const expectedProfit = ethers.parseEther(params.expectedProfit);
-      const amount = ethers.parseEther(params.amount);
+      const amount = ethers.BigNumber.from(ethers.parseEther(params.amount));
 
       // Get optimal gas strategy
       const gasStrategy = await this.gasOptimizer.calculateOptimalGasStrategy(
@@ -29,14 +29,12 @@ export class GasAwareFlashLoan {
         this.determineComplexity(params)
       );
 
-      // Calculate total gas cost
-      const totalGasCost = gasStrategy.baseGas
-        .add(gasStrategy.priorityFee)
-        .mul(gasStrategy.gasLimit);
+      // Calculate total gas cost using native BigInt operations
+      const totalGasCost = ethers.BigNumber.from(gasStrategy.baseGas).add(gasStrategy.priorityFee).mul(gasStrategy.gasLimit);
 
       // Calculate net profit after gas
-      const netProfit = expectedProfit.sub(totalGasCost);
-      const profitMargin = Number(netProfit) / Number(expectedProfit);
+      const netProfit = ethers.BigNumber.from(expectedProfit).sub(totalGasCost);
+      const profitMargin = netProfit.toNumber() / ethers.BigNumber.from(expectedProfit).toNumber();
 
       // Check if trade is viable
       const isViable = profitMargin >= this.MIN_PROFIT_THRESHOLD;
@@ -45,14 +43,14 @@ export class GasAwareFlashLoan {
       if (!isViable) {
         recommendation = this.generateOptimizationRecommendation(
           profitMargin,
-          totalGasCost,
+          totalGasCost.toString(),
           expectedProfit
         );
       }
 
       return {
         isViable,
-        optimizedGas: totalGasCost,
+        optimizedGas: totalGasCost.toString(),
         expectedProfit: netProfit,
         recommendation
       };
@@ -65,25 +63,23 @@ export class GasAwareFlashLoan {
   private determineComplexity(params: FlashLoanParams): 'low' | 'medium' | 'high' {
     const amount = ethers.parseEther(params.amount);
     
-    // Determine complexity based on amount and protocol
-    if (amount.gt(ethers.parseEther('1000'))) return 'high';
-    if (amount.gt(ethers.parseEther('100'))) return 'medium';
+    // Determine complexity using native BigInt comparisons
+    if (amount > ethers.parseEther('1000')) return 'high';
+    if (amount > ethers.parseEther('100')) return 'medium';
     return 'low';
   }
 
   private generateOptimizationRecommendation(
     profitMargin: number,
-    gasCost: ethers.BigNumber,
-    expectedProfit: ethers.BigNumber
+    gasCost: ethers.BigNumberish,
+    expectedProfit: bigint
   ): string {
     if (profitMargin < 0) {
       return 'Transaction would result in a loss due to gas costs. Consider increasing trade size or waiting for lower gas prices.';
     }
 
     if (profitMargin < this.MIN_PROFIT_THRESHOLD) {
-      const requiredProfitIncrease = ethers.parseEther(
-        (this.MIN_PROFIT_THRESHOLD - profitMargin).toString()
-      );
+      const requiredProfitIncrease = Number(expectedProfit) * (this.MIN_PROFIT_THRESHOLD - profitMargin);
       return `Profit margin too low. Need additional $${ethers.formatEther(requiredProfitIncrease)} in profit for viability.`;
     }
 
@@ -93,25 +89,26 @@ export class GasAwareFlashLoan {
   public async batchTransactions(
     operations: FlashLoanParams[]
   ): Promise<{
-    batchedGas: ethers.BigNumber;
-    individualGas: ethers.BigNumber;
-    savings: ethers.BigNumber;
+    batchedGas: bigint;
+    individualGas: bigint;
+    savings: bigint;
   }> {
     try {
       // Calculate gas for individual transactions
-      const individualGasPromises = operations.map(op =>
-        this.gasOptimizer.estimateFlashLoanGas(
-          op.token,
-          ethers.parseEther(op.amount),
-          1
+      const individualGasEstimates = await Promise.all(
+        operations.map(async op => 
+          this.gasOptimizer.estimateFlashLoanGas(
+            op.token,
+            ethers.parseEther(op.amount),
+            1
+          )
         )
       );
       
-      const individualGasEstimates = await Promise.all(individualGasPromises);
-      const totalIndividualGas = individualGasEstimates.reduce(
-        (sum, gas) => sum.add(gas),
-        ethers.BigNumber.from(0)
-      );
+const totalIndividualGas = individualGasEstimates.reduce(
+  (sum, gas) => sum.add(gas),
+  ethers.BigNumber.from(0)
+);
 
       // Calculate gas for batched transaction
       const batchedGas = await this.gasOptimizer.estimateFlashLoanGas(
@@ -120,12 +117,12 @@ export class GasAwareFlashLoan {
         operations.length
       );
 
-      const savings = totalIndividualGas.sub(batchedGas);
+      const savings = totalIndividualGas.sub(batchedGas).toString();
 
       return {
         batchedGas,
         individualGas: totalIndividualGas,
-        savings
+        savings,toString()
       };
     } catch (error) {
       logger.error('Failed to calculate batch savings:', error as Error);
