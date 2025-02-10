@@ -2,12 +2,12 @@ import React, { useState } from 'react';
 import { ArrowRightLeft, AlertCircle, Wallet, TrendingUp, BarChart3 } from 'lucide-react';
 import { tradeExecutor } from '../utils/tradeExecutor';
 import { generateMarketDepth, calculateSlippage } from '../utils/mockData';
-import type { PriceData, Trade, Balance } from '../types';
-import { TradeDetails } from './TradeDetails';
+import type { PriceData, Trade, Balance, TradeDetails } from '../types';
+import { TradeDetails as TradeDetailsComponent } from './TradeDetails';
 
 interface Props {
   priceData?: PriceData;
-  onTradeComplete: (trade: Trade) => void;
+  onTradeComplete: (trade: TradeDetails) => void;
 }
 
 export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) => {
@@ -27,46 +27,37 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
 
   const executeArbitrage = async () => {
     if (!priceData) return;
-
     setLoading(true);
     setError('');
-
     const startTime = performance.now();
 
     try {
       const isDexCheaper = Number(priceData.dex) < Number(priceData.cex);
       const priceDiff = Math.abs(Number(priceData.dex) - Number(priceData.cex));
       const profitPotential = (priceDiff / Math.min(Number(priceData.dex), Number(priceData.cex))) * 100;
-
       if (profitPotential < 1) {
         throw new Error('Insufficient price difference for profitable arbitrage');
       }
-
       const buyResult = await tradeExecutor.executeTrade(
         'BUY',
         isDexCheaper ? 'DEX' : 'CEX',
         amount,
         isDexCheaper ? Number(priceData.dex) : Number(priceData.cex)
       );
-
       if (!buyResult.success) {
         throw new Error(buyResult.error);
       }
-
       const sellResult = await tradeExecutor.executeTrade(
         'SELL',
         isDexCheaper ? 'CEX' : 'DEX',
         amount,
         isDexCheaper ? Number(priceData.cex) : Number(priceData.dex)
       );
-
       if (!sellResult.success) {
         throw new Error(sellResult.error);
       }
-
       const endTime = performance.now();
       const executionTime = Math.round(endTime - startTime);
-
       if (buyResult.trade && sellResult.trade) {
         const buyTradeDetails: TradeDetails = {
           ...buyResult.trade,
@@ -76,7 +67,6 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
           executionTime,
           warnings: []
         };
-
         const sellTradeDetails: TradeDetails = {
           ...sellResult.trade,
           profitLoss: Number(sellResult.trade.amount) * Number(sellResult.trade.price),
@@ -85,12 +75,10 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
           executionTime,
           warnings: []
         };
-
         setTradeHistory(prev => [...prev, buyTradeDetails, sellTradeDetails]);
         onTradeComplete(buyTradeDetails);
         onTradeComplete(sellTradeDetails);
       }
-
       setBalances(tradeExecutor.getBalances());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to execute trades');
@@ -118,7 +106,6 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
             Wallet Balances
           </h2>
         </div>
-
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {balances.map((balance) => (
@@ -129,7 +116,6 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
                     Total Value: ${getTotalBalanceUSD(balance).toFixed(2)}
                   </span>
                 </div>
-
                 <div className="space-y-4">
                   <div className="bg-white rounded-lg p-4 shadow-sm">
                     <div className="flex justify-between items-center">
@@ -140,7 +126,6 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
                       ≈ ${(Number(balance.dexAmount) * Number(priceData.dex)).toFixed(2)}
                     </div>
                   </div>
-
                   <div className="bg-white rounded-lg p-4 shadow-sm">
                     <div className="flex justify-between items-center">
                       <span className="text-gray-600">CEX Balance</span>
@@ -150,7 +135,6 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
                       ≈ ${(Number(balance.cexAmount) * Number(priceData.cex)).toFixed(2)}
                     </div>
                   </div>
-
                   {Number(balance.pending) > 0 && (
                     <div className="bg-yellow-50 rounded-lg p-4">
                       <div className="flex justify-between items-center">
@@ -167,7 +151,6 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
           </div>
         </div>
       </div>
-
       {/* Trade Executor */}
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="p-6 border-b border-gray-200">
@@ -176,7 +159,6 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
             Execute Trade
           </h2>
         </div>
-
         <div className="p-6">
           <div className="space-y-6">
             <div>
@@ -202,7 +184,6 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
                 </div>
               </div>
             </div>
-
             {estimatedSlippage > 0 && (
               <div className="rounded-md bg-yellow-50 p-4">
                 <div className="flex">
@@ -218,7 +199,6 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
                 </div>
               </div>
             )}
-
             <button
               onClick={executeArbitrage}
               disabled={loading}
@@ -226,16 +206,11 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
                 loading ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
-              {loading ? (
-                'Executing Trade...'
-              ) : (
-                <>
-                  <ArrowRightLeft className="mr-2 h-5 w-5" />
-                  Execute Arbitrage
-                </>
-              )}
+              {loading ? 'Executing Trade...' : <>
+                <ArrowRightLeft className="mr-2 h-5 w-5" />
+                Execute Arbitrage
+              </>}
             </button>
-
             {error && (
               <div className="rounded-md bg-red-50 p-4">
                 <div className="flex">
@@ -252,7 +227,6 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
           </div>
         </div>
       </div>
-
       {/* Trade History */}
       {tradeHistory.length > 0 && (
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -265,7 +239,7 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
           <div className="p-6">
             <div className="space-y-4">
               {tradeHistory.map((trade) => (
-                <TradeDetails key={trade.id} trade={trade} />
+                <TradeDetailsComponent key={trade.id} trade={trade} />
               ))}
             </div>
           </div>
