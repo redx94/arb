@@ -1,7 +1,8 @@
 /// <reference lib="webworker" />
-declare var self: ServiceWorkerGlobalScope;
 
-const CACHE_NAME = 'app-cache-v1';
+declare const self: ServiceWorkerGlobalScope;
+
+const CACHE_NAME = 'app-cache-v2'; // Updated cache name to force refresh on updates
 const OFFLINE_URL = '/offline.html';
 const STATIC_ASSETS = [
   '/',
@@ -21,18 +22,21 @@ self.addEventListener('install', (event: ExtendableEvent) => {
 self.addEventListener('activate', (event: ExtendableEvent) => {
   event.waitUntil(
     caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.filter(name => name !== CACHE_NAME).map(name => caches.delete(name))
-      );
+      return Promise.all
+      (cacheNames.filter(name => name !== CACH_NAME))
+      .map(mane => caches.delete(mane));
     })
   );
 });
 
+
 self.addEventListener('fetch', (event: FetchEvent) => {
   if (event.request.mode === 'navigate') {
-event.respondWith(
-  fetch(event.request).catch(() => caches.match(OFFLINE_URL) || caches.match(event.request))
-);
+    event.respondWith(
+      fetch(event.request).catch(() =>        caches.match(OFFLINE_URL).then(
+          response => response || caches.match(event.request)
+        )
+    );
     return;
   }
   event.respondWith(
