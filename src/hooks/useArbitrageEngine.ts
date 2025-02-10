@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { ArbitrageEngine } from '../utils/arbitrage/arbitrageEngine';
-import { useTradeStore } from '../utils/store';
 import { Logger } from '../utils/monitoring';
 
 const logger = Logger.getInstance();
@@ -10,7 +9,6 @@ export const useArbitrageEngine = () => {
   const [latency, setLatency] = useState<number>(0);
   const [errors, setErrors] = useState<string[]>([]);
   const [warnings, setWarnings] = useState<string[]>([]);
-
   const engine = ArbitrageEngine.getInstance();
 
   // Define event handlers
@@ -27,7 +25,6 @@ export const useArbitrageEngine = () => {
   const handleLatencyUpdate = (newLatency: number) => setLatency(newLatency);
 
   useEffect(() => {
-    // Subscribe to engine events
     engine.on('started', handleStarted);
     engine.on('stopped', handleStopped);
     engine.on('error', handleError);
@@ -35,7 +32,6 @@ export const useArbitrageEngine = () => {
     engine.on('latencyUpdate', handleLatencyUpdate);
 
     return () => {
-      // Cleanup event listeners using the same handler references
       engine.off('started', handleStarted);
       engine.off('stopped', handleStopped);
       engine.off('error', handleError);
@@ -78,7 +74,7 @@ export const useArbitrageEngine = () => {
 
   const updateSettings = (settings: any) => {
     try {
-      // Update engine settings (implementation details)
+      // Update engine settings here
       logger.info('Updating engine settings:', settings);
     } catch (error) {
       logger.error('Failed to update settings:', error as Error);
