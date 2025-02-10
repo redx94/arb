@@ -1,5 +1,5 @@
 /// <reference lib="webworker" />
-declare const self: ServiceWorkerGlobalScope;
+declare var self: ServiceWorkerGlobalScope;
 
 const CACHE_NAME = 'app-cache-v1';
 const OFFLINE_URL = '/offline.html';
@@ -30,9 +30,9 @@ self.addEventListener('activate', (event: ExtendableEvent) => {
 
 self.addEventListener('fetch', (event: FetchEvent) => {
   if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match(OFFLINE_URL) || caches.match(event.request))
-    );
+event.respondWith(
+  fetch(event.request).catch(() => caches.match(OFFLINE_URL) || caches.match(event.request))
+);
     return;
   }
   event.respondWith(

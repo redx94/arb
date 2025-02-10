@@ -8,7 +8,7 @@ const riskLevels: RiskLevel[] = [
   { level: 'High', color: 'red', description: 'High risk of frontrunning and sandwich attacks' }
 ];
 
-const RiskIcon: React.FC<{ level: RiskLevel['level'] }> = ({ level }) => {
+const RiskIcon: React.FC<{ level: string }> = ({ level }) => {
   switch (level) {
     case 'Low':
       return <Shield className="text-green-500" />;

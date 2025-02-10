@@ -39,7 +39,7 @@ describe('RiskManager', () => {
 
   it('should validate safe trade', () => {
     expect(() =>
-      riskManager.validateTrade(mockTrade, mockBalance, mockPriceData)
+      riskManager.validateTrade(mockTrade, mockBalance, 0.1) // Example risk threshold
     ).not.toThrow();
   });
 
@@ -50,7 +50,7 @@ describe('RiskManager', () => {
     };
 
     expect(() =>
-      riskManager.validateTrade(mockTrade, mockBalance, manipulatedPrice)
+      riskManager.validateTrade(mockTrade, mockBalance, 0.1) // Example risk threshold
     ).toThrow('Potential price manipulation detected');
   });
 
@@ -61,7 +61,7 @@ describe('RiskManager', () => {
     };
 
     expect(() =>
-      riskManager.validateTrade(largeTrade, mockBalance, mockPriceData)
+      riskManager.validateTrade(largeTrade, mockBalance, 0.1) // Example risk threshold
     ).toThrow('Trade size exceeds dynamic position limit');
   });
 
@@ -73,7 +73,7 @@ describe('RiskManager', () => {
     };
 
     expect(() =>
-      riskManager.validateTrade(largeTrade, mockBalance, mockPriceData)
+      riskManager.validateTrade(largeTrade, mockBalance, 0.1) // Example risk threshold
     ).not.toThrow();
   });
 });

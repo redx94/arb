@@ -24,7 +24,7 @@ describe('ArbitrageEngine', () => {
       opportunities.push(data);
     });
     arbitrageEngine.start();
-    PriceFeed.getInstance().emit('price', mockPriceData);
+    PriceFeed.getInstance().updatePrice(mockPriceData);
     expect(opportunities.length).toBeGreaterThan(0);
     expect(opportunities[0].dex).toBe(mockPriceData.dex);
     expect(opportunities[0].cex).toBe(mockPriceData.cex);
@@ -41,7 +41,7 @@ describe('ArbitrageEngine', () => {
       timestamp: Date.now()
     };
     arbitrageEngine.start();
-    PriceFeed.getInstance().emit('price', unprofitablePriceData);
+    PriceFeed.getInstance().updatePrice(unprofitablePriceData);
     expect(trades.length).toBe(0);
   });
 
@@ -54,7 +54,7 @@ describe('ArbitrageEngine', () => {
       throw new Error('Risk limit exceeded');
     });
     arbitrageEngine.start();
-    PriceFeed.getInstance().emit('price', mockPriceData);
+    PriceFeed.getInstance().updatePrice(mockPriceData);
     expect(warnings.length).toBeGreaterThan(0);
     expect(warnings[0]).toContain('Risk limit exceeded');
   });
@@ -71,7 +71,7 @@ describe('ArbitrageEngine', () => {
       return 0 as any;
     });
     arbitrageEngine.start();
-    PriceFeed.getInstance().emit('price', mockPriceData);
+    PriceFeed.getInstance().updatePrice(mockPriceData);
     expect(slowExecutions.length).toBeGreaterThan(0);
   });
 });

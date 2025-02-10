@@ -6,23 +6,24 @@ import { MevRiskMatrix } from './MevRiskMatrix';
 import { ArbitrageWalkthrough } from './ArbitrageWalkthrough';
 import { TradeExecutor } from './TradeExecutor';
 import { PriceFeed } from '../utils/priceFeeds';
-import type { PriceData, SimulationScenario, Trade } from '../types';
+import { PriceData, SimulationScenario, Trade, NetworkConditions } from '../types';
 
 export const ArbitrageVisualizer: React.FC = () => {
   const [priceHistory, setPriceHistory] = useState<PriceData[]>([]);
   const [trades, setTrades] = useState<Trade[]>([]);
   const [useMockData, setUseMockData] = useState<boolean>(true);
-  const [currentScenario, setCurrentScenario] = useState<SimulationScenario>({
-    volatility: 0.2,
-    dexMultiplier: 1,
-    name: 'Normal Market',
-    description: 'Standard market conditions with typical volatility'
-  });
+const [currentScenario, setCurrentScenario] = useState<SimulationScenario>({
+  volatility: 0.2,
+  dexMultiplier: 1,
+  name: 'Normal Market',
+  networkConditions: NetworkConditions.Stable,
+  profitThreshold: 0.5
+});
 
   useEffect(() => {
     const priceFeed = PriceFeed.getInstance();
     priceFeed.setMockMode(useMockData);
-    const unsubscribe = priceFeed.subscribe((newPrice) => {
+    const unsubscribe = priceFeed.subscribe('price', (newPrice: any) => {
       setPriceHistory(prev => [...prev.slice(-50), newPrice]);
     });
     return () => unsubscribe();
@@ -43,7 +44,11 @@ export const ArbitrageVisualizer: React.FC = () => {
         <ScenarioLoader onScenarioChange={setCurrentScenario} currentScenario={currentScenario} disabled={!useMockData} />
       </div>
       <LineChart data={priceHistory} />
-      <TradeExecutor priceData={priceHistory[priceHistory.length - 1]} onTradeComplete={(trade) => setTrades(prev => [...prev, trade])} />
+      <TradeExecutor priceData={priceHistory[priceHistory.length - 1]} onTradeComplete={(trade) => {
+  if ('timestamp' in trade && typeof trade.timestamp === 'number') {
+    setTrades(prev => [...prev, { ...trade, timestamp: Number(trade.timestamp) }]);
+  }
+}} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <MevRiskMatrix />
         <ArbitrageWalkthrough />

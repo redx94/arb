@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { ArrowRightLeft, AlertCircle, Wallet, TrendingUp, BarChart3 } from 'lucide-react';
 import { tradeExecutor } from '../utils/tradeExecutor';
 import { generateMarketDepth, calculateSlippage } from '../utils/mockData';
-import type { PriceData, Trade, Balance, TradeDetails } from '../types';
-import { TradeDetails as TradeDetailsComponent } from './TradeDetails';
+import type { PriceData, Trade, Balance } from '../types';
+import TradeDetails from './TradeDetails';
 
 interface Props {
   priceData?: PriceData;
@@ -61,16 +61,16 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
       if (buyResult.trade && sellResult.trade) {
         const buyTradeDetails: TradeDetails = {
           ...buyResult.trade,
-          profitLoss: -Number(buyResult.trade.amount) * Number(buyResult.trade.price),
-          effectivePrice: Number(buyResult.trade.price) * (1 + (buyResult.trade.slippage || 0)),
+          profitLoss: BigInt(-Number(buyResult.trade.amount) * Number(buyResult.trade.price)),
+          effectivePrice: BigInt(Number(buyResult.trade.price) * (1 + (buyResult.trade.slippage || 0))),
           priceImpact: buyResult.trade.slippage || 0,
           executionTime,
           warnings: []
         };
         const sellTradeDetails: TradeDetails = {
           ...sellResult.trade,
-          profitLoss: Number(sellResult.trade.amount) * Number(sellResult.trade.price),
-          effectivePrice: Number(sellResult.trade.price) * (1 - (sellResult.trade.slippage || 0)),
+          profitLoss: BigInt(Number(sellResult.trade.amount) * Number(sellResult.trade.price)),
+          effectivePrice: BigInt(Number(sellResult.trade.price) * (1 - (sellResult.trade.slippage || 0))),
           priceImpact: sellResult.trade.slippage || 0,
           executionTime,
           warnings: []
@@ -239,7 +239,7 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
           <div className="p-6">
             <div className="space-y-4">
               {tradeHistory.map((trade) => (
-                <TradeDetailsComponent key={trade.id} trade={trade} />
+                <TradeDetails key={trade.id} trade={trade} />
               ))}
             </div>
           </div>
