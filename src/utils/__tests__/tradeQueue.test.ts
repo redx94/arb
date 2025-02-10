@@ -9,7 +9,6 @@ describe('TradeQueue', () => {
   beforeEach(() => {
     tradeQueue = TradeQueue.getInstance();
     tradeQueue.clearQueue();
-
     mockTrade = {
       id: '1',
       type: 'BUY',
@@ -23,39 +22,28 @@ describe('TradeQueue', () => {
 
   it('should add trade to queue', async () => {
     await tradeQueue.addTrade(mockTrade);
-    expect(tradeQueue.getQueueLength()).toBe(1); // Should be 1 after adding a trade
+    expect(tradeQueue.getQueueLength()).toBe(1);
   });
 
   it('should process queue in order', async () => {
     const processedTrades: string[] = [];
-
     tradeQueue.on('tradeExecuted', (result) => {
       processedTrades.push(result.trade.id);
     });
-
     await Promise.all([
       tradeQueue.addTrade({ ...mockTrade, id: '1' }),
       tradeQueue.addTrade({ ...mockTrade, id: '2' }),
       tradeQueue.addTrade({ ...mockTrade, id: '3' })
     ]);
-
     expect(processedTrades).toEqual(['1', '2', '3']);
   });
 
   it('should handle trade failures and retries', async () => {
     const failedTrades: string[] = [];
-
     tradeQueue.on('tradeFailed', (result) => {
       failedTrades.push(result.trade.id);
     });
-
-    // Mock a failing trade
-    const failingTrade = {
-      ...mockTrade,
-      id: 'fail',
-      amount: -1n // This will cause validation to fail
-    };
-
+    const failingTrade = { ...mockTrade, id: 'fail', amount: -1n };
     await tradeQueue.addTrade(failingTrade);
     expect(failedTrades).toContain('fail');
   });
