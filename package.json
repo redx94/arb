@@ -10,11 +10,11 @@
     "test": "truffle test",
     "dev": "vite"
   },
-  "author": "Your Name",
+  "author": "Reece Dixon",
   "license": "MIT",
   "dependencies": {
     "@aave/protocol-js": "^4.2.0",
-    "@ethersproject/providers": "^5.7.2",
+    "ethers": "^6.0.0",
     "@openzeppelin/contracts": "^4.8.0",
     "@truffle/hdwallet-provider": "^2.0.10",
     "@types/react": "^19.0.10",

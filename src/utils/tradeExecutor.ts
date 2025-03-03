@@ -61,33 +61,7 @@ export const tradeExecutor = {
     }
   },
 
-  async calculateEffectivePrice(receipt: ethers.providers.TransactionReceipt): Promise<number> {
-    const tx = await provider.getTransaction(receipt.transactionHash);
-    const value = tx.value.toNumber();
-    return value / receipt.gasUsed.toNumber();
-  },
-
-  async calculateProfit(receipt: ethers.providers.TransactionReceipt): Promise<number> {
-    const gasCost = parseFloat(ethers.utils.formatEther(receipt.gasUsed.mul(receipt.effectiveGasPrice)));
-    const value = parseFloat(ethers.utils.formatEther(receipt.effectiveGasPrice));
-    return value - gasCost;
-  },
-
-  async calculatePriceImpact(receipt: ethers.providers.TransactionReceipt): Promise<number> {
-    const block = await provider.getBlock(receipt.blockNumber);
-    const preTxPrice = await this.getMarketPrice(block.timestamp - 60);
-    const postTxPrice = await this.getMarketPrice(block.timestamp + 60);
-    return (postTxPrice - preTxPrice) / preTxPrice;
-  },
-
-  private async getMarketPrice(timestamp: number): Promise<number> {
-    // Implement actual price feed lookup
-    return 3000; // Example ETH price
-  },
-
-  getBalances(): Balance[] {
-    return [
-      { asset: 'ETH', dexAmount: 10, cexAmount: 5, pending: 0 }
-    ];
-  }
-};
+  async calculateEffectivePrice(receipt: ethers.TransactionReceipt): Promise<number> {
+    const tx = await provider.getTransaction(receipt.hash);
+    const value = Number(tx?.value);
+    return value / Number(receipt.gasUsed);

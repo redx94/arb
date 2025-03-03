@@ -1,5 +1,4 @@
 import { ethers } from 'ethers';
-import type { Trade, Balance } from '../types';
 import { RiskManager } from './riskManager';
 
 export interface FlashLoanParams {
@@ -31,15 +30,15 @@ export class FlashLoanHandler {
 
   public async validateFlashLoan(params: FlashLoanParams): Promise<boolean> {
     // Validate minimum profit threshold
-    const profitBN = ethers.parseEther(params.expectedProfit);
-    const minProfit = ethers.parseEther(this.MIN_PROFIT_THRESHOLD);
+    const profitBN = ethers.parseUnits(params.expectedProfit, 18);
+    const minProfit = ethers.parseUnits(this.MIN_PROFIT_THRESHOLD, 18);
     if (profitBN < minProfit) {
       throw new Error('Insufficient profit margin for flash loan');
     }
 
     // Check gas price
-    const gasPrice = ethers.BigNumber.from(await this.getCurrentGasPrice());
-    if (gasPrice.gt(ethers.parseUnits(this.MAX_GAS_PRICE, 'gwei'))) {
+    const gasPrice = await this.getCurrentGasPrice();
+    if (gasPrice > ethers.parseUnits(this.MAX_GAS_PRICE, 'gwei')) {
       throw new Error('Gas price too high for profitable execution');
     }
 
@@ -49,20 +48,28 @@ export class FlashLoanHandler {
     }
 
     // Calculate required repayment with safety buffer
-    const repaymentAmount = ethers.parseEther(params.amount)
-      .mul(ethers.parseEther(this.SAFETY_BUFFER))
-      .div(ethers.parseEther('1.0'));
+    const loanAmount = BigInt(ethers.parseUnits(params.amount, 18));
+    const repaymentAmount = loanAmount * BigInt(102) / BigInt(100); // 2% safety buffer
 
     return true;
   }
 
-  public async executeFlashLoan(params: FlashLoanParams): Promise<string> {
+  public async executeFlashLoan(params: FlashLoanParams, gasless: boolean = true): Promise<string> {
     try {
       // Pre-flight checks
-      await this.validateFlashLoan(params);
+      const gasCost = await this.estimateGasCost(params);
+      const amountWei = ethers.parseUnits(params.amount, 18);
+      const expectedProfitWei = ethers.parseUnits(params.expectedProfit, 18);
+      const modifiedParams = gasless ? {
+        ...params,
+        amount: ethers.formatUnits(amountWei + gasCost, 18),
+        expectedProfit: ethers.formatUnits(expectedProfitWei + gasCost, 18)
+      } : params;
+      
+      await this.validateFlashLoan(modifiedParams);
 
-      // Simulate execution first
-      const simulation = await this.simulateExecution(params);
+      // Simulate execution first with gas coverage check
+      const simulation = await this.simulateExecution(modifiedParams);
       if (!simulation.success) {
         throw new Error(`Simulation failed: ${simulation.error}`);
       }
@@ -79,22 +86,29 @@ export class FlashLoanHandler {
     }
   }
 
-  private async getCurrentGasPrice(): Promise<ethers.BigNumberish> {
-    // Implementation to get current gas price
-    return ethers.parseUnits('50', 'gwei'); // Example
+  private async estimateGasCost(_params: FlashLoanParams): Promise<bigint> {
+    const gasPrice = await this.getCurrentGasPrice();
+    const estimatedGas = 500000n; // Average flash loan tx gas
+    return gasPrice * estimatedGas;
   }
 
-  private async simulateExecution(params: FlashLoanParams): Promise<{ success: boolean; error: string | null }> {
+  private async getCurrentGasPrice(): Promise<bigint> {
+    const provider = new ethers.JsonRpcProvider(process.env.PROVIDER_URL);
+    const { maxFeePerGas } = await provider.getFeeData();
+    return maxFeePerGas ?? 50000000000n; // 50 gwei default
+  }
+
+  private async simulateExecution(_params: FlashLoanParams): Promise<{ success: boolean; error: string | null }> {
     // Implement simulation logic
     return { success: true, error: null };
   }
 
-  private async sendFlashLoanTransaction(params: FlashLoanParams): Promise<string> {
+  private async sendFlashLoanTransaction(_params: FlashLoanParams): Promise<string> {
     // Implementation of actual flash loan transaction
     return '0x...'; // Return transaction hash
   }
 
-  private async monitorTransaction(txHash: string): Promise<void> {
+  private async monitorTransaction(_txHash: string): Promise<void> {
     // Monitor transaction status and handle reverts
   }
 }

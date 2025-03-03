@@ -1,52 +1,23 @@
-import { Logger } from '../monitoring';
-
-const logger = Logger.getInstance();
-
 export class RateLimiter {
-  private static instance: RateLimiter;
-  private requests: Map<string, number[]> = new Map();
-  private readonly WINDOW_MS = 60000; // 1 minute
-  private readonly MAX_REQUESTS = 100; // per window
+  private requests: number[];
+  private readonly maxRequests: number;
+  private readonly interval: number;
 
-  private constructor() {}
-
-  public static getInstance(): RateLimiter {
-    if (!RateLimiter.instance) {
-      RateLimiter.instance = new RateLimiter();
-    }
-    return RateLimiter.instance;
+  constructor(maxRequests: number, intervalMs: number = 60000) {
+    this.maxRequests = maxRequests;
+    this.interval = intervalMs;
+    this.requests = [];
   }
 
-  public async checkLimit(identifier: string): Promise<boolean> {
-    try {
-      const now = Date.now();
-      const requests = this.requests.get(identifier) || [];
-
-      // Remove expired timestamps
-      const validRequests = requests.filter(timestamp =>
-        now - timestamp < this.WINDOW_MS
-      );
-
-      if (validRequests.length >= this.MAX_REQUESTS) {
-        logger.warn('Rate limit exceeded for:', identifier);
-        return false;
-      }
-
-      validRequests.push(now);
-      this.requests.set(identifier, validRequests);
-      return true;
-    } catch (error) {
-      logger.error('Rate limit check failed:', error as Error);
+  checkLimit(): boolean {
+    const now = Date.now();
+    this.requests = this.requests.filter(timestamp => now - timestamp < this.interval);
+    
+    if (this.requests.length >= this.maxRequests) {
       return false;
     }
-  }
-
-  public getRemainingRequests(identifier: string): number {
-    const now = Date.now();
-    const requests = this.requests.get(identifier) || [];
-    const validRequests = requests.filter(timestamp =>
-      now - timestamp < this.WINDOW_MS
-    );
-    return Math.max(0, this.MAX_REQUESTS - validRequests.length);
+    
+    this.requests.push(now);
+    return true;
   }
 }
