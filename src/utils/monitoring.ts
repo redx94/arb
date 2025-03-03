@@ -90,7 +90,7 @@ export class Logger {
       ...meta
     });
     console.error(formattedMessage);
-    this.bufferLog({ level: 'error', message, error, meta, timestamp: new Date() });
+    this.bufferLog({ level: 'error', message, meta: {error: error?.message, stack: error?.stack, ...meta}, timestamp: new Date() });
   }
 
   public warn(message: string, meta?: any): void {

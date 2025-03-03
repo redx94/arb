@@ -34,19 +34,23 @@ export class PriceFeed {
   }
 
   public unsubscribe(callback: (data: any) => void): void {
-    // Dummy implementation for unsubscription
-    // This method should be implemented to remove the callback from the subscription list
+    // Remove the callback from the listeners array
+    this.subscribers = Object.fromEntries(Object.entries(this.subscribers).filter(([, func]) => func !== callback));
   }
 
   public async getCurrentPrice(): Promise<PriceData> {
     // Dummy implementation for getting current price
     return this.mockMode
       ? {
+          token: '',
+          price: 0,
           dex: Math.random() * 1000,
           cex: Math.random() * 1000,
           timestamp: Date.now(),
         }
       : {
+          token: '',
+          price: 0,
           dex: Math.random() * 1000,
           cex: Math.random() * 1000,
           timestamp: Date.now(),

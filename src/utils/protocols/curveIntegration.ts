@@ -1,17 +1,14 @@
-import { ethers } from 'ethers';
-
-export class CurveProtocol {
-  private static instance: CurveProtocol;
-  private readonly REGISTRY = '0x90E00ACe148ca3b23Ac1bC8C240C2a7Dd9c2d7f5';
+export class CurveIntegration {
+  private static instance: CurveIntegration;
   
-  public static getInstance(): CurveProtocol {
-    if (!CurveProtocol.instance) {
-      CurveProtocol.instance = new CurveProtocol();
+  public static getInstance(): CurveIntegration {
+    if (!CurveIntegration.instance) {
+      CurveIntegration.instance = new CurveIntegration();
     }
-    return CurveProtocol.instance;
+    return CurveIntegration.instance;
   }
 
-  public async getPoolInfo(poolAddress: string) {
+  public async getPoolInfo() {
     // Get pool details and rates
     return {
       coins: [],
@@ -22,12 +19,7 @@ export class CurveProtocol {
     };
   }
 
-  public async calculateExchange(
-    poolAddress: string,
-    tokenFrom: string,
-    tokenTo: string,
-    amount: string
-  ) {
+  public async calculateExchange() {
     // Calculate expected output
     return {
       expectedOutput: '0',
@@ -35,13 +27,7 @@ export class CurveProtocol {
     };
   }
 
-  public async executeExchange(params: {
-    pool: string;
-    tokenFrom: string;
-    tokenTo: string;
-    amount: string;
-    minReceived: string;
-  }) {
+  public async executeExchange() {
     // Execute exchange on Curve
     return {
       success: true,

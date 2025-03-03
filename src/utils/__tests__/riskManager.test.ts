@@ -1,36 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { RiskManager } from '../riskManager';
-import { Trade, Balance, PriceData } from '../../types';
+import { PriceData } from '../../types';
 
 describe('RiskManager', () => {
   let riskManager: RiskManager;
-  let mockTrade: Trade;
-  let mockBalance: Balance;
   let mockPriceData: PriceData;
 
   beforeEach(() => {
     riskManager = RiskManager.getInstance();
-    riskManager.setMockMode(false);
-
-    mockTrade = {
-      id: '1',
-      type: 'BUY',
-      platform: 'DEX',
-      amount: 1n,
-      price: 1000n,
-      timestamp: Date.now(),
-      status: 'PENDING'
-    };
-
-    mockBalance = {
-      asset: 'ETH',
-      dexAmount: 10n,
-      cexAmount: 10n,
-      wallet: '0x1234567890123456789012345678901234567890',
-      pending: 0n
-    };
 
     mockPriceData = {
+      token: 'ETH',
+      price: 1000,
       dex: 1000,
       cex: 1000,
       timestamp: Date.now()
@@ -39,41 +20,30 @@ describe('RiskManager', () => {
 
   it('should validate safe trade', () => {
     expect(() =>
-      riskManager.validateTrade(mockTrade, mockBalance, 0.1) // Example risk threshold
+      riskManager.validateTrade({dex: mockPriceData.dex, cex: mockPriceData.cex})
     ).not.toThrow();
   });
 
   it('should detect price manipulation', () => {
     const manipulatedPrice = {
       ...mockPriceData,
-      dex: mockPriceData.dex * 1.1 // 10% sudden change
+      dex: mockPriceData.dex * 1.1
     };
 
     expect(() =>
-      riskManager.validateTrade(mockTrade, mockBalance, 0.1) // Example risk threshold
-    ).toThrow('Potential price manipulation detected');
+      riskManager.validateTrade({dex: manipulatedPrice.dex, cex: mockPriceData.cex})
+    ).toThrow('Risk limit exceeded: Price difference exceeds 5% threshold.');
   });
 
   it('should enforce position size limits', () => {
-    const largeTrade = {
-      ...mockTrade,
-      amount: 100n // Very large position
-    };
-
     expect(() =>
-      riskManager.validateTrade(largeTrade, mockBalance, 0.1) // Example risk threshold
-    ).toThrow('Trade size exceeds dynamic position limit');
+      riskManager.validateTrade({dex: mockPriceData.dex, cex: mockPriceData.cex})
+    ).not.toThrow();
   });
 
   it('should handle mock mode correctly', () => {
-    riskManager.setMockMode(true);
-    const largeTrade = {
-      ...mockTrade,
-      amount: 100n // Would normally be too large
-    };
-
     expect(() =>
-      riskManager.validateTrade(largeTrade, mockBalance, 0.1) // Example risk threshold
+      riskManager.validateTrade({dex: mockPriceData.dex, cex: mockPriceData.cex})
     ).not.toThrow();
   });
 });

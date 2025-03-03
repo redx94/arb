@@ -9,6 +9,8 @@ describe('PathFinder', () => {
   beforeEach(() => {
     pathFinder = PathFinder.getInstance();
     mockPriceData = {
+      token: 'ETH',
+      price: 1000,
       dex: 1000,
       cex: 1020,
       timestamp: Date.now()
@@ -25,12 +27,14 @@ describe('PathFinder', () => {
 
   it('should return null when no profitable path exists', async () => {
     const unprofitablePriceData = {
+      token: 'ETH',
+      price: 1000,
       dex: 1000,
       cex: 1001,
       timestamp: Date.now()
     };
 
-    const path = await pathFinder.findOptimalPath('DEX_A', 1.0, unprofitablePriceData);
+    const path = await pathFinder.findOptimalPath('DEX_A', 1.0, unprofitablePriceData as PriceData);
     expect(path).toBeNull();
   });
 

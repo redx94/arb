@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import type { Transaction } from '../types';
+import type {} from '../types';
 
 export class MempoolMonitor {
   private static instance: MempoolMonitor;
@@ -26,7 +26,7 @@ export class MempoolMonitor {
         const tx = await this.provider.getTransaction(txHash);
         if (this.isRelevantTransaction(tx)) {
           this.pendingTxs.add(txHash);
-          this.analyzeMEVRisk(tx);
+          this.analyzeMEVRisk();
         }
       } catch (error) {
         console.error('Error monitoring mempool:', error);
@@ -34,22 +34,20 @@ export class MempoolMonitor {
     });
   }
 
-  private isRelevantTransaction(tx: any): boolean {
+  private isRelevantTransaction(_tx: any): boolean {
     // Check if transaction affects our trading pairs or contracts
     return true; // Implement proper logic
   }
 
-  private analyzeMEVRisk(tx: any) {
+  private analyzeMEVRisk() {
     // Analyze transaction for MEV risk
-    const gasPrice = ethers.utils.parseUnits(tx.gasPrice.toString(), 'wei');
-    const value = ethers.utils.parseUnits(tx.value.toString(), 'wei');
 
     // Check for sandwich attack patterns
     // Check for front-running risks
     // Monitor for flashbots bundles
   }
 
-  public async waitForSafety(txHash: string): Promise<boolean> {
+  public async waitForSafety(_txHash: string): Promise<boolean> {
     // Wait for transaction to be safe from MEV
     return new Promise((resolve) => {
       setTimeout(() => resolve(true), 2000); // Implement proper logic

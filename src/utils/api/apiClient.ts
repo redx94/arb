@@ -17,7 +17,7 @@ class ApiClient {
 
   private constructor() {
     this.config = {
-      baseURL: !import.meta.vite_api_url ?"import.meta.vite_api_url" : 'http://localhost:3000',
+      baseURL: 'http://localhost:3000',
       version: 'v1',
       timeout: 10000,
     };
@@ -58,17 +58,17 @@ class ApiClient {
       }
       return await response.json();
     } catch (error) {
-      logger.error('API request failed:', error);
+      logger.error('API request failed:', error as Error);
       throw error;
     }
   }
 
-  public get<T>(endpoint: string, force: boolean): Promise<T> {
+  public get<T>(endpoint: string, _force: boolean): Promise<T> {
     return this.queryApi('GET', endpoint);
   }
-  public post<T>(endpoint: string, data: any, force: boolean): Promise<T> {
+  public post<T>(endpoint: string, data: any, _force: boolean): Promise<T> {
     return this.queryApi( 'POST', endpoint, data );
   }
 }
 
-export { ApiClient }; 
+export { ApiClient };

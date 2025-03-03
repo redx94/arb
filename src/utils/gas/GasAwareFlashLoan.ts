@@ -7,7 +7,7 @@ const logger = Logger.getInstance();
 
 export class GasAwareFlashLoan {
   private readonly gasOptimizer: GasOptimizer;
-  private readonly MIN_PROFIT_THRESHOLD = 0.02; // 2% minimum profit after gas
+  private readonly MIN_PROFIT_THRESHOLD = parseFloat(process.env.MIN_PROFIT_THRESHOLD_GAS_AWARE || '0.02'); // 2% minimum profit after gas
 
   constructor() {
     this.gasOptimizer = GasOptimizer.getInstance();
@@ -21,7 +21,6 @@ export class GasAwareFlashLoan {
   }> {
     try {
       const expectedProfit = ethers.parseEther(params.expectedProfit);
-      const amount = ethers.parseEther(params.amount);
 
       // Get optimal gas strategy
       const gasStrategy = await this.gasOptimizer.calculateOptimalGasStrategy(
@@ -43,7 +42,6 @@ export class GasAwareFlashLoan {
       if (!isViable) {
         recommendation = this.generateOptimizationRecommendation(
           profitMargin,
-          totalGasCost.toString(),
           expectedProfit
         );
       }
@@ -71,7 +69,6 @@ export class GasAwareFlashLoan {
 
   private generateOptimizationRecommendation(
     profitMargin: number,
-    gasCost: string,
     expectedProfit: bigint
   ): string {
     if (profitMargin < 0) {
@@ -97,30 +94,28 @@ export class GasAwareFlashLoan {
       // Calculate gas for individual transactions
       const individualGasEstimates = await Promise.all(
         operations.map(async op =>
-          this.gasOptimizer.estimateFlashLoanGas(
-            op.token,
-            ethers.parseEther(op.amount),
-            1
+          this.gasOptimizer.calculateOptimalGasStrategy(
+            ethers.parseEther(op.expectedProfit),
+            this.determineComplexity(op)
           )
         )
       );
 
       const totalIndividualGas = individualGasEstimates.reduce(
-        (sum, gas) => sum + BigInt(gas),
+        (sum: bigint, strategy: any) => sum + BigInt(strategy.gasLimit),
         BigInt(0)
       );
 
       // Calculate gas for batched transaction
-      const batchedGas = await this.gasOptimizer.estimateFlashLoanGas(
-        operations[0].token,
-        ethers.parseEther(operations[0].amount),
-        operations.length
+      const batchedGasStrategy = await this.gasOptimizer.calculateOptimalGasStrategy(
+        ethers.parseEther(operations[0].expectedProfit),
+        this.determineComplexity(operations[0])
       );
 
-      const savings = totalIndividualGas - BigInt(batchedGas);
+      const savings = totalIndividualGas - BigInt(batchedGasStrategy.gasLimit);
 
       return {
-        batchedGas: BigInt(batchedGas),
+        batchedGas: BigInt(batchedGasStrategy.gasLimit),
         individualGas: totalIndividualGas,
         savings: savings
       };

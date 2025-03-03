@@ -17,7 +17,7 @@ const totalProfit = trades.reduce((sum, trade) => {
   const profit = trade.type === 'SELL'
     ? trade.amount * trade.price
     : -(trade.amount * trade.price);
-  return sum + profit;
+return sum + BigInt(Number(profit));
 }, 0n);
 
 const averageExecutionTime = trades.reduce((sum, trade) =>

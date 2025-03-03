@@ -1,17 +1,14 @@
-import { ethers } from 'ethers';
-
-export class CompoundProtocol {
-  private static instance: CompoundProtocol;
-  private readonly COMPTROLLER = '0x3d9819210A31b4961b30EF54bE2aeD79B9c9Cd3B';
+export class CompoundIntegration {
+  private static instance: CompoundIntegration;
   
-  public static getInstance(): CompoundProtocol {
-    if (!CompoundProtocol.instance) {
-      CompoundProtocol.instance = new CompoundProtocol();
+  public static getInstance(): CompoundIntegration {
+    if (!CompoundIntegration.instance) {
+      CompoundIntegration.instance = new CompoundIntegration();
     }
-    return CompoundProtocol.instance;
+    return CompoundIntegration.instance;
   }
 
-  public async getMarketData(cToken: string) {
+  public async getMarketData() {
     // Get market supply/borrow data
     return {
       supplyRate: 0,
@@ -21,7 +18,7 @@ export class CompoundProtocol {
     };
   }
 
-  public async calculateAccountLiquidity(address: string) {
+  public async calculateAccountLiquidity() {
     // Get account's borrowing capacity
     return {
       totalCollateralValueUSD: 0,

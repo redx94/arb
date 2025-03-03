@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ArrowRightLeft, AlertCircle, Wallet, TrendingUp, BarChart3 } from 'lucide-react';
 import { tradeExecutor } from '../utils/tradeExecutor';
 import { generateMarketDepth, calculateSlippage } from '../utils/mockData';
-import type { PriceData, Trade, Balance } from '../types';
+import type { PriceData, Balance } from '../types';
 import TradeDetails from './TradeDetails';
 
 interface Props {
@@ -41,7 +41,7 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
       const buyResult = await tradeExecutor.executeTrade(
         'BUY',
         isDexCheaper ? 'DEX' : 'CEX',
-        amount,
+        String(amount),
         isDexCheaper ? Number(priceData.dex) : Number(priceData.cex)
       );
       if (!buyResult.success) {
@@ -50,7 +50,7 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
       const sellResult = await tradeExecutor.executeTrade(
         'SELL',
         isDexCheaper ? 'CEX' : 'DEX',
-        amount,
+        String(amount),
         isDexCheaper ? Number(priceData.cex) : Number(priceData.dex)
       );
       if (!sellResult.success) {
@@ -61,16 +61,22 @@ export const TradeExecutor: React.FC<Props> = ({ priceData, onTradeComplete }) =
       if (buyResult.trade && sellResult.trade) {
         const buyTradeDetails: TradeDetails = {
           ...buyResult.trade,
-          profitLoss: BigInt(-Number(buyResult.trade.amount) * Number(buyResult.trade.price)),
-          effectivePrice: BigInt(Number(buyResult.trade.price) * (1 + (buyResult.trade.slippage || 0))),
+          executedPrice: 0,
+          slippage: 0,
+          feeStructure: {makerFee: 0, takerFee: 0},
+          profitLoss: Number(BigInt(-Number(buyResult.trade.amount) * Number(buyResult.trade.price))),
+          effectivePrice: Number(BigInt(Number(buyResult.trade.price) * (1 + (buyResult.trade.slippage || 0)))),
           priceImpact: buyResult.trade.slippage || 0,
           executionTime,
           warnings: []
         };
         const sellTradeDetails: TradeDetails = {
           ...sellResult.trade,
-          profitLoss: BigInt(Number(sellResult.trade.amount) * Number(sellResult.trade.price)),
-          effectivePrice: BigInt(Number(sellResult.trade.price) * (1 - (sellResult.trade.slippage || 0))),
+          executedPrice: 0,
+          slippage: 0,
+          feeStructure: {makerFee: 0, takerFee: 0},
+          profitLoss: Number(BigInt(Number(sellResult.trade.amount) * Number(sellResult.trade.price))),
+          effectivePrice: Number(BigInt(Number(sellResult.trade.price) * (1 - (sellResult.trade.slippage || 0)))),
           priceImpact: sellResult.trade.slippage || 0,
           executionTime,
           warnings: []

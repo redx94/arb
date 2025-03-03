@@ -32,13 +32,17 @@ export class ArbitrageEngine extends EventEmitter {
     PriceFeed.getInstance().unsubscribe(this.handlePrice);
   }
 
+  public isRunning(): boolean {
+    return this.running;
+  }
+
   private handlePrice = (data: PriceData) => {
     try {
-      const profitThreshold = 1; // 1% threshold
+      const profitThreshold = parseFloat(process.env.PROFIT_THRESHOLD || '1'); // 1% threshold
       const diff = Math.abs(data.cex - data.dex) / Math.min(data.cex, data.dex) * 100;
       if (diff >= profitThreshold) {
         // Optionally, check risk management
-        RiskManager.getInstance().validateTrade(data, 0.1); // Example risk threshold
+        RiskManager.getInstance().validateTrade(data); // Example risk threshold
         this.emit('opportunity', data);
         // Simulate trade execution warning for slow execution if needed
         if (data.timestamp % 2 === 0) {

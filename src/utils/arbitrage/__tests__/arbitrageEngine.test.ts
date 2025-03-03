@@ -2,47 +2,59 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ArbitrageEngine } from '../arbitrageEngine';
 import { PriceFeed } from '../../priceFeeds';
 import { RiskManager } from '../../riskManager';
-import type { PriceData } from '../../../types';
 
 describe('ArbitrageEngine', () => {
   let arbitrageEngine: ArbitrageEngine;
-  let mockPriceData: PriceData;
+  let mockPriceData: { dex: number; cex: number; timestamp: number; token: string; price: number };
 
   beforeEach(() => {
     arbitrageEngine = ArbitrageEngine.getInstance();
     mockPriceData = {
+      token: 'ETH',
+      price: 1000,
       dex: 1000,
-      cex: 1020, // 2% difference
+      cex: 1000,
       timestamp: Date.now()
     };
+  });
+
+  it('should start and stop correctly', () => {
+    arbitrageEngine.start();
+    expect(arbitrageEngine.isRunning()).toBe(true);
     arbitrageEngine.stop();
+    expect(arbitrageEngine.isRunning()).toBe(false);
   });
 
-  it('should detect arbitrage opportunities', async () => {
-    const opportunities: PriceData[] = [];
-    arbitrageEngine.on('opportunity', (data) => {
-      opportunities.push(data);
-    });
-    arbitrageEngine.start();
-    PriceFeed.getInstance().updatePrice(mockPriceData);
-    expect(opportunities.length).toBeGreaterThan(0);
-    expect(opportunities[0].dex).toBe(mockPriceData.dex);
-    expect(opportunities[0].cex).toBe(mockPriceData.cex);
-  });
-
-  it('should not trade when profit is below threshold', async () => {
-    const trades: any[] = [];
-    arbitrageEngine.on('execution', (data) => {
-      trades.push(data);
-    });
-    const unprofitablePriceData = {
-      dex: 1000,
-      cex: 1001, // below threshold
+  it('should detect profitable arbitrage opportunity', (done: any) => {
+    const profitablePriceData = {
+      token: 'ETH',
+      price: 1000,
+      dex: 990,
+      cex: 1010,
       timestamp: Date.now()
     };
     arbitrageEngine.start();
+    arbitrageEngine.on('opportunity', (data: any) => {
+      expect(data).toEqual(profitablePriceData);
+      done();
+    });
+    PriceFeed.getInstance().updatePrice(profitablePriceData);
+  });
+
+  it('should not detect unprofitable arbitrage opportunity', () => {
+    const unprofitablePriceData = {
+      token: 'ETH',
+      price: 1000,
+      dex: 1010,
+      cex: 990,
+      timestamp: Date.now()
+    };
+    let opportunityEmitted = false;
+    arbitrageEngine.on('opportunity', () => {
+      opportunityEmitted = true;
+    });
     PriceFeed.getInstance().updatePrice(unprofitablePriceData);
-    expect(trades.length).toBe(0);
+    expect(opportunityEmitted).toBe(false);
   });
 
   it('should respect risk management rules', async () => {

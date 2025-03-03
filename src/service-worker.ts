@@ -1,45 +1,17 @@
-declare const self: ServiceWorkerGlobalScope;
+/// <reference lib="webworker"/>
 
-const CACHE_NAME = "app-cache-v2"; // Updated cache name
-const OFFLINE_URL = "/offline.html";
-const STATIC_ASSETS = [
-  // Static assets for caching
-  "/",
-  "/index.html",
-  OFFLINE_URL,
-  "/manifest.json",
-  "/static/css/main.css",
-  "/static/js/main.js"
-];
+const sw = self as unknown as ServiceWorkerGlobalScope;
 
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-    .then(cache => cache.addAll(STATIC_ASSETS))
-  );
+sw.addEventListener("install", (event: ExtendableEvent) => {
+  console.log("Installing service worker...");
+  event.waitUntil(Promise.resolve());
 });
 
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then(cacheNames =>
-      Promise.all( cacheNames
-        .filter((name) => name !== CACHE_NAME) 
-        .map((cache) => caches.delete(cache))
-      )
-  );
+sw.addEventListener("activate", (event: ExtendableEvent) => {
+  console.log("Activating service worker...");
+  event.waitUntil(Promise.resolve());
 });
 
-self.addEventListener("fetch", (event) => {
-  if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetch(event.request)
-      .catch(() => caches.match(OFFLINE_URL).then(
-        (response) => response || caches.match(event.request)
-      )
-    );
-    return;
-  }
-  event.respondWith(
-    caches.match(event.request).then((response) => response || fetch(event.request))
-  );
+sw.addEventListener("fetch", (event: FetchEvent) => {
+  console.log("Fetching:", event.request.url);
 });

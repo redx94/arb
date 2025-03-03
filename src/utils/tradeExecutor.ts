@@ -1,67 +1,98 @@
-import { ethers } from 'ethers';
-import { FlashLoanProvider, AaveV3 } from '@aave/protocol-js';
-import type { Trade, Balance, TradeDetails } from '../../types';
-import { getGasPrice } from './gas/GasOptimizer';
-import { SecurityManager } from './production/SecurityManager';
+import type { Balance, TradeDetails } from '../types';
+import { PriceFeed } from './priceFeeds';
 
-const provider = new ethers.providers.JsonRpcProvider(process.env.PROVIDER_URL);
-const wallet = new ethers.Wallet(process.env.PRIVATE_KEY, provider);
-const aave = new AaveV3(provider, process.env.NETWORK);
+class TradeExecutor {
+  // Placeholder balances - these should be replaced with actual account balances
+  private balances: Balance[] = [
+    { asset: 'ETH', dexAmount: 10, cexAmount: 10, pending: 0 },
+  ];
 
-export const tradeExecutor = {
-  async executeTrade(
+  public getBalances(): Balance[] {
+    return this.balances;
+  }
+
+  public async executeTrade(
     type: 'BUY' | 'SELL',
-    tokenPair: string,
+    platform: string,
     amount: string,
-    routes: string[]
+    price: number
   ): Promise<{ success: boolean; trade?: TradeDetails; error?: string }> {
     try {
-      SecurityManager.verifyLiveEnvironment();
-      
-      // Initiate flash loan
-      const flashLoan = await FlashLoanProvider.initiate({
-        provider: aave,
-        assets: [tokenPair],
-        amounts: [amount],
-        modes: [0], // 0 = no debt, 1 = stable, 2 = variable
-      });
+      const amountNumber = Number(amount);
+      if (isNaN(amountNumber) || amountNumber <= 0) {
+        throw new Error('Invalid trade amount');
+      }
 
-      // Execute arbitrage strategy
-      const tradeTx = await flashLoan.executeStrategy(
-        routes,
-        { gasPrice: await getGasPrice() }
-      );
+      const balance = this.balances.find(b => b.asset === 'ETH');
+      if (!balance) {
+        throw new Error('ETH balance not found');
+      }
 
-      // Wait for transaction confirmation
-      const receipt = await tradeTx.wait();
-      
-      return {
-        success: receipt.status === 1,
-        trade: {
-          id: receipt.transactionHash,
-          type,
-          platform: 'Aave V3',
-          amount: parseFloat(amount),
-          price: await this.calculateEffectivePrice(receipt),
-          effectivePrice: await this.calculateEffectivePrice(receipt),
-          profitLoss: await this.calculateProfit(receipt),
-          priceImpact: await this.calculatePriceImpact(receipt),
-          gasCost: receipt.gasUsed.mul(receipt.effectiveGasPrice).toString(),
-          timestamp: (await provider.getBlock(receipt.blockNumber)).timestamp,
-          status: receipt.status === 1 ? 'COMPLETED' : 'FAILED',
-          warnings: SecurityManager.analyzeTxRisk(receipt)
+      if (type === 'BUY') {
+        if (platform === 'DEX') {
+          if (balance.dexAmount < amountNumber) {
+            throw new Error('Insufficient DEX balance');
+          }
+          balance.dexAmount -= amountNumber;
+          balance.pending += amountNumber;
+        } else {
+          if (balance.cexAmount < amountNumber) {
+            throw new Error('Insufficient CEX balance');
+          }
+          balance.cexAmount -= amountNumber;
+          balance.pending += amountNumber;
+        }
+      } else {
+        if (platform === 'DEX') {
+          balance.dexAmount += amountNumber;
+          balance.pending -= amountNumber;
+        } else {
+          balance.cexAmount += amountNumber;
+          balance.pending -= amountNumber;
+        }
+      }
+
+      const tradeDetails: TradeDetails = {
+        id: Math.random().toString(36).substring(2, 15),
+        type,
+        platform,
+        amount: amountNumber,
+        price,
+        effectivePrice: price,
+        profitLoss: 0,
+        priceImpact: 0,
+        gasCost: 0,
+        timestamp: Date.now(),
+        status: 'COMPLETED',
+        warnings: [],
+        executedPrice: 0,
+        slippage: 0,
+        feeStructure: {
+          makerFee: 0,
+          takerFee: 0
         }
       };
-    } catch (error) {
-      SecurityManager.logError(error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
-      };
-    }
-  },
 
-  async calculateEffectivePrice(receipt: ethers.TransactionReceipt): Promise<number> {
-    const tx = await provider.getTransaction(receipt.hash);
-    const value = Number(tx?.value);
-    return value / Number(receipt.gasUsed);
+      return { success: true, trade: tradeDetails };
+    } catch (error: any) {
+      console.error('Trade execution failed:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async calculateProfit(trade: TradeDetails): Promise<number> {
+    // Basic profit calculation: (sell price - buy price) * amount
+    return (trade.type === 'SELL' ? 1 : -1) * trade.amount * (trade.effectivePrice - trade.price);
+  }
+
+  async calculatePriceImpact(trade: TradeDetails): Promise<number> {
+    // Estimate price impact based on trade size and current price
+    const priceFeed = PriceFeed.getInstance();
+    const currentPriceData = await priceFeed.getCurrentPrice();
+    const currentPrice = currentPriceData.price || 1000; // Use a default price if price is not available
+    const priceChange = trade.amount / currentPrice;
+    return priceChange;
+  }
+}
+
+export const tradeExecutor = new TradeExecutor();

@@ -9,17 +9,20 @@ interface Props {
 }
 
 const predefinedScenarios: SimulationScenario[] = [
-  {
-    name: 'Normal Market',
-    networkConditions: {
-      gasPrice: 50,
-      networkLatency: 100,
-      blockTime: 15,
-      confirmationBlocks: 12
+    {
+      name: 'Normal Market',
+      networkConditions: {
+        gasPrice: 50,
+        networkLatency: 100,
+        blockTime: 15,
+        blockConfirmationTime: 12,
+        latency: 35,
+        networkCongestion: 0.15
     },
-    profitThreshold: 0.01,
-    volatility: 0.2,
-    dexMultiplier: 1
+    riskThreshold: 0.01,
+    description: '',
+    assets: [],
+    duration: 0
   },
   {
     name: 'High Volatility',
@@ -27,11 +30,14 @@ const predefinedScenarios: SimulationScenario[] = [
       gasPrice: 60,
       networkLatency: 120,
       blockTime: 18,
-      confirmationBlocks: 15
+      blockConfirmationTime: 15,
+      latency: 50,
+      networkCongestion: 0.3
     },
-    profitThreshold: 0.02,
-    volatility: 0.5,
-    dexMultiplier: 1
+    riskThreshold: 0.02,
+    description: '',
+    assets: [],
+    duration: 0
   },
   {
     name: 'DEX Premium',
@@ -39,11 +45,14 @@ const predefinedScenarios: SimulationScenario[] = [
       gasPrice: 55,
       networkLatency: 110,
       blockTime: 16,
-      confirmationBlocks: 13
+      blockConfirmationTime: 13,
+      latency: 40,
+      networkCongestion: 0.2
     },
-    profitThreshold: 0.015,
-    volatility: 0.2,
-    dexMultiplier: 1.05
+    riskThreshold: 0.015,
+    description: '',
+    assets: [],
+    duration: 0
   },
   {
     name: 'DEX Discount',
@@ -51,11 +60,14 @@ const predefinedScenarios: SimulationScenario[] = [
       gasPrice: 45,
       networkLatency: 90,
       blockTime: 14,
-      confirmationBlocks: 11
+      blockConfirmationTime: 11,
+      latency: 30,
+      networkCongestion: 0.1
     },
-    profitThreshold: 0.005,
-    volatility: 0.2,
-    dexMultiplier: 0.95
+    riskThreshold: 0.005,
+    description: '',
+    assets: [],
+    duration: 0
   }
 ];
 

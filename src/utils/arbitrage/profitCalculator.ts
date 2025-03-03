@@ -24,7 +24,7 @@ export class ProfitCalculator {
     buyPrice: number,
     sellPrice: number,
     amount: number,
-    priceData: PriceData
+    _priceData: PriceData
   ): Promise<{
     profit: bigint;
     isViable: boolean;
@@ -53,7 +53,7 @@ export class ProfitCalculator {
       const { flashLoanCost, gasCost, slippageCost } = await this.calculateCosts(
         amountBN,
         buyPriceBN,
-        priceData
+        _priceData
       );
 
       const totalCosts = flashLoanCost + gasCost + slippageCost;
@@ -81,14 +81,14 @@ export class ProfitCalculator {
   private async calculateCosts(
     amount: bigint,
     price: bigint,
-    priceData: PriceData
+    _priceData: PriceData
   ): Promise<{
   flashLoanCost: bigint;
   gasCost: bigint;
   slippageCost: bigint;
   }> {
     // Calculate flash loan fee
-      const flashLoanCost = (amount *
+    const flashLoanCost = (amount *
       price *
       ethers.parseEther(this.FLASH_LOAN_FEE.toString())) /
       ethers.parseEther('1');
@@ -99,7 +99,7 @@ export class ProfitCalculator {
     const gasCost = gasPrice * estimatedGasUnits;
 
     // Calculate expected slippage
-    const slippageCost = this.calculateSlippageCost(amount, price, priceData);
+    const slippageCost = this.calculateSlippageCost(amount, price, _priceData);
 
     return {
       flashLoanCost,
@@ -128,7 +128,7 @@ export class ProfitCalculator {
   private calculateSlippageCost(
     amount: bigint,
     price: bigint,
-    priceData: PriceData
+    _priceData: PriceData
   ): bigint {
     // Calculate slippage based on order size and liquidity
     const baseSlippage = 0.001; // 0.1% base slippage

@@ -3,8 +3,7 @@ import { EventEmitter } from 'events';
 import { Logger } from '../monitoring';
 import { walletManager } from '../wallet';
 import { PriceFeed } from '../priceFeeds';
-import { RiskManager } from '../riskManager';
-import type { VerificationResult, SecurityConfig } from './types';
+import type { VerificationResult } from './types';
 
 const logger = Logger.getInstance();
 
@@ -129,8 +128,7 @@ export class SystemVerifier {
       const orderFunctions = await this.validateOrderFunctions();
       details.orderFunctionsValid = orderFunctions.every(f => f.valid);
 
-      const riskManager = RiskManager.getInstance();
-      const riskParams = await this.validateRiskParameters(riskManager);
+      const riskParams = await this.validateRiskParameters();
       details.riskParamsValid = riskParams.valid;
 
       return { 
@@ -250,7 +248,7 @@ export class SystemVerifier {
     ];
   }
 
-  private async validateRiskParameters(riskManager: RiskManager): Promise<{ valid: boolean; issues?: string[] }> {
+  private async validateRiskParameters(): Promise<{ valid: boolean; issues?: string[] }> {
     return { valid: true };
   }
 

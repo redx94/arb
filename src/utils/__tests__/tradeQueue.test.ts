@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { TradeQueue } from '../tradeQueue';
 import { Trade } from '../../types';
 
@@ -13,10 +13,15 @@ describe('TradeQueue', () => {
       id: '1',
       type: 'BUY',
       platform: 'DEX',
-      amount: 1n,
-      price: 1000n,
+      amount: 1,
+      price: 1000,
       timestamp: Date.now(),
-      status: 'PENDING'
+      status: 'PENDING',
+      effectivePrice: 0,
+      profitLoss: 0,
+      priceImpact: 0,
+      gasCost: 0,
+      warnings: []
     };
   });
 
@@ -43,7 +48,7 @@ describe('TradeQueue', () => {
     tradeQueue.on('tradeFailed', (result) => {
       failedTrades.push(result.trade.id);
     });
-    const failingTrade = { ...mockTrade, id: 'fail', amount: -1n };
+    const failingTrade = { ...mockTrade, id: 'fail', amount: -1 };
     await tradeQueue.addTrade(failingTrade);
     expect(failedTrades).toContain('fail');
   });

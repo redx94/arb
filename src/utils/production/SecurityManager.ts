@@ -5,8 +5,8 @@ import { RateLimiter } from '../security/RateLimiter';
 
 export class SecurityManager {
   private static circuitBreaker = new CircuitBreaker();
-  private static rateLimiter = new RateLimiter(5); // 5 requests/minute
-  
+  private static rateLimiter = new RateLimiter(parseInt(process.env.RATE_LIMIT_REQUESTS || '5')); // 5 requests/minute
+
   static verifyLiveEnvironment() {
     if (!process.env.PRIVATE_KEY?.startsWith('0x') || 
         !process.env.PROVIDER_URL?.includes('mainnet')) {
@@ -23,14 +23,14 @@ export class SecurityManager {
     
     // Gas validation
     const estimatedGas = await GasOptimizer.estimateGasCost(tx);
-    if (estimatedGas.gt(ethers.parseUnits('0.1', 'ether'))) {
-      warnings.push('Gas cost exceeds 0.1 ETH threshold');
+    if (Number(estimatedGas) > Number(ethers.parseUnits(process.env.MAX_GAS_COST_THRESHOLD || '0.1', 'ether'))) {
+      warnings.push(`Gas cost exceeds ${process.env.MAX_GAS_COST_THRESHOLD || '0.1'} ETH threshold`);
       this.circuitBreaker.recordIncident();
     }
 
     // Slippage check
-    if (tx.data.includes('0x') && tx.value.gt(ethers.parseEther('100'))) {
-      warnings.push('Large value transfer detected');
+    if (tx.data.includes('0x') && Number(tx.value) > Number(ethers.parseEther(process.env.LARGE_VALUE_TRANSFER_THRESHOLD || '100'))) {
+      warnings.push(`Large value transfer detected (over ${process.env.LARGE_VALUE_TRANSFER_THRESHOLD || '100'} ETH)`);
     }
 
     // Rate limiting

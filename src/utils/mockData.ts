@@ -1,18 +1,5 @@
-import { SimulationScenario } from '../types';
+export const generateMockPrices = () => {
 
-export const generateMockPrices = (scenario?: SimulationScenario) => {
-  const basePrice = 3000; // Base ETH price
-  const volatility = scenario?.volatility || 0.2;
-  const multiplier = scenario?.dexMultiplier || 1;
-
-  const cexPrice = basePrice * (1 + (Math.random() - 0.5) * volatility);
-  const dexPrice = cexPrice * multiplier * (1 + (Math.random() - 0.5) * volatility * 2);
-
-  return {
-    dex: Number(dexPrice.toFixed(2)),
-    cex: Number(cexPrice.toFixed(2)),
-    timestamp: Date.now()
-  };
 };
 
 export const SAFE_PRICE_RANGE = {

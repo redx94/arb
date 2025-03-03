@@ -1,23 +1,14 @@
-import { ethers } from 'ethers';
-
-export class UniswapProtocol {
-  private static instance: UniswapProtocol;
-  private readonly FACTORY_V3 = '0x1F98431c8aD98523631AE4a59f267346ea31F984';
-  private readonly QUOTER_V2 = '0x61fFE014bA17989E743c5F6cB21bF9697530B21e';
+export class UniswapIntegration {
+  private static instance: UniswapIntegration;
   
-  public static getInstance(): UniswapProtocol {
-    if (!UniswapProtocol.instance) {
-      UniswapProtocol.instance = new UniswapProtocol();
+  public static getInstance(): UniswapIntegration {
+    if (!UniswapIntegration.instance) {
+      UniswapIntegration.instance = new UniswapIntegration();
     }
-    return UniswapProtocol.instance;
+    return UniswapIntegration.instance;
   }
 
-  public async getOptimalSwapRoute(params: {
-    tokenIn: string;
-    tokenOut: string;
-    amount: string;
-    maxHops?: number;
-  }) {
+  public async getOptimalSwapRoute() {
     // Find best route through pools
     return {
       route: [],
@@ -26,7 +17,7 @@ export class UniswapProtocol {
     };
   }
 
-  public async getPoolLiquidity(poolAddress: string) {
+  public async getPoolLiquidity() {
     // Get pool's liquidity data
     return {
       token0Liquidity: '0',
@@ -35,12 +26,7 @@ export class UniswapProtocol {
     };
   }
 
-  public async executeSwap(params: {
-    route: string[];
-    amountIn: string;
-    minAmountOut: string;
-    deadline: number;
-  }) {
+  public async executeSwap() {
     // Execute swap through optimal route
     return {
       success: true,

@@ -6,27 +6,35 @@ import { MevRiskMatrix } from './MevRiskMatrix';
 import { ArbitrageWalkthrough } from './ArbitrageWalkthrough';
 import { TradeExecutor } from './TradeExecutor';
 import { PriceFeed } from '../utils/priceFeeds';
-import { PriceData, SimulationScenario, Trade, NetworkConditions } from '../types';
+import { PriceData, SimulationScenario } from '../types';
 
 export const ArbitrageVisualizer: React.FC = () => {
   const [priceHistory, setPriceHistory] = useState<PriceData[]>([]);
-  const [trades, setTrades] = useState<Trade[]>([]);
   const [useMockData, setUseMockData] = useState<boolean>(true);
 const [currentScenario, setCurrentScenario] = useState<SimulationScenario>({
-  volatility: 0.2,
-  dexMultiplier: 1,
   name: 'Normal Market',
-  networkConditions: NetworkConditions.Stable,
-  profitThreshold: 0.5
+  description: 'Normal market conditions',
+  networkConditions: {
+    latency: 50,
+    gasPrice: 20,
+    blockConfirmationTime: 5,
+    networkCongestion: 0.1,
+    networkLatency: 100,
+    blockTime: 10
+  },
+  assets: [],
+  duration: 60,
+  riskThreshold: 0.5
 });
 
-  useEffect(() => {
+ useEffect(() => {
     const priceFeed = PriceFeed.getInstance();
     priceFeed.setMockMode(useMockData);
-    const unsubscribe = priceFeed.subscribe('price', (newPrice: any) => {
+    const handlePriceUpdate = (newPrice: any) => {
       setPriceHistory(prev => [...prev.slice(-50), newPrice]);
-    });
-    return () => unsubscribe();
+    };
+    const unsubscribe = priceFeed.subscribe(handlePriceUpdate);
+    return unsubscribe;
   }, [useMockData]);
 
   return (
@@ -46,7 +54,7 @@ const [currentScenario, setCurrentScenario] = useState<SimulationScenario>({
       <LineChart data={priceHistory} />
       <TradeExecutor priceData={priceHistory[priceHistory.length - 1]} onTradeComplete={(trade) => {
   if ('timestamp' in trade && typeof trade.timestamp === 'number') {
-    setTrades(prev => [...prev, { ...trade, timestamp: Number(trade.timestamp) }]);
+    // setTrades(prev => [...prev, { ...trade, timestamp: Number(trade.timestamp) }]);
   }
 }} />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

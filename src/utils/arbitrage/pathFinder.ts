@@ -1,5 +1,4 @@
 import { ethers } from 'ethers';
-import { PriceFeed } from '../priceFeeds';
 import { PerformanceMonitor } from '../monitoring';
 import type { PriceData } from '../../types';
 
@@ -19,7 +18,6 @@ interface ArbitragePath {
 
 export class PathFinder {
   private static instance: PathFinder;
-  private readonly priceFeed = PriceFeed.getInstance();
   private readonly performanceMonitor = PerformanceMonitor.getInstance();
   private readonly MAX_PATH_LENGTH = 3;
   private readonly MIN_LIQUIDITY = ethers.parseEther('10'); // 10 ETH
@@ -129,9 +127,9 @@ export class PathFinder {
   }
 
   private async getExchangeData(
-    fromExchange: string,
-    toExchange: string,
-    amount: number,
+    _fromExchange: string,
+    _toExchange: string,
+    _amount: number,
     priceData: PriceData
   ): Promise<{ price: number; liquidity: number; fees: number } | null> {
     // Mock implementation - replace with actual exchange data fetching

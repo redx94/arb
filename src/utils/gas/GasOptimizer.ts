@@ -1,7 +1,7 @@
-import { EventEmitter } from 'events';
-import { ethers, JsonRpcProvider } from 'ethers';
+import { ethers } from 'ethers';
 import { Logger } from '../monitoring';
 import { CacheManager } from '../cache/cacheManager';
+import { configManager } from '../config';
 
 interface GasHistory {
   timestamp: number;
@@ -19,12 +19,11 @@ interface GasStrategy {
 
 export class GasOptimizer {
   private static instance: GasOptimizer;
-  private readonly eventEmitter = new EventEmitter();
   private readonly gasHistory: CacheManager<GasHistory>;
-  private readonly HISTORY_WINDOW = 1000;
-  private readonly MIN_PROFIT_MARGIN = 0.02;
-  private readonly MAX_PRIORITY_FEE = BigInt(3000000000); // 3 gwei
-  private readonly BASE_GAS_LIMIT = 300000n;
+  private readonly HISTORY_WINDOW = parseInt(process.env.GAS_HISTORY_WINDOW || '1000');
+  private readonly MIN_PROFIT_MARGIN = parseFloat(process.env.GAS_MIN_PROFIT_MARGIN || '0.02');
+  private readonly MAX_PRIORITY_FEE = BigInt(process.env.GAS_MAX_PRIORITY_FEE || '3000000000'); // 3 gwei
+  private readonly BASE_GAS_LIMIT = BigInt(process.env.GAS_BASE_GAS_LIMIT || '300000');
 
   private constructor() {
     this.gasHistory = new CacheManager<GasHistory>({ ttl: 3600000 });
@@ -39,16 +38,16 @@ export class GasOptimizer {
   }
 
   static async estimateGasCost(tx: ethers.Transaction): Promise<bigint> {
-    const provider = new ethers.JsonRpcProvider(import.meta.env.VITE_PROVIDER_URL);
+    const provider = configManager.getProvider();
     const estimatedGas = await provider.estimateGas(tx);
     return estimatedGas;
   }
 
   private async startGasMonitoring() {
     try {
-      const provider = new ethers.JsonRpcProvider(import.meta.env.VITE_PROVIDER_URL);
+      const provider = configManager.getProvider();
 
-      provider.on('block', async (blockNumber) => {
+      provider.on('block', async (blockNumber: number) => {
         const feeData = await provider.getFeeData();
         const timestamp = Date.now();
 
@@ -56,7 +55,7 @@ export class GasOptimizer {
           this.gasHistory.set(blockNumber.toString(), {
             timestamp,
             baseGas: Number(feeData.gasPrice),
-            priorityFee: Number(feeData.maxPriorityFeePerGas || 0),
+            priorityFee: feeData.maxPriorityFeePerGas != null ? Number(feeData.maxPriorityFeePerGas) : 0,
             blockNumber: Number(blockNumber)
           });
         }
@@ -125,7 +124,7 @@ export class GasOptimizer {
 
   private calculateBaseGas(gasStats: {
     median: number;
-    trend: 'increasing' | 'decreasing' | 'stable';
+    trend: string;
     volatility: number;
   }): bigint {
     let baseGas = BigInt(Math.floor(gasStats.median));
@@ -147,7 +146,8 @@ export class GasOptimizer {
     return this.BASE_GAS_LIMIT * BigInt(multiplier);
   }
 
-  private determineWaitBlocks(gasStats: { trend: 'increasing' | 'decreasing' | 'stable' }): number {
-    return { decreasing: 1, stable: 2, increasing: 3 }[gasStats.trend];
+  private determineWaitBlocks(gasStats: { trend: string }): number {
+    const trend = gasStats.trend as 'increasing' | 'decreasing' | 'stable';
+    return { decreasing: 1, stable: 2, increasing: 3 }[trend];
   }
 }

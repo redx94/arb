@@ -1,20 +1,20 @@
 import React from 'react';
 import { Shield, AlertTriangle, XOctagon } from 'lucide-react';
-import type { RiskLevel } from '../types';
+import type {} from '../types';
 
-const riskLevels: RiskLevel[] = [
-  { level: 'Low', color: 'green', description: 'Standard arbitrage with minimal MEV risk' },
-  { level: 'Medium', color: 'yellow', description: 'Potential for sandwich attacks in high-value trades' },
-  { level: 'High', color: 'red', description: 'High risk of frontrunning and sandwich attacks' }
+const riskLevels: { level: string; color: string; description: string }[] = [
+  { level: 'LOW', color: 'green', description: 'Standard arbitrage with minimal MEV risk' },
+  { level: 'MEDIUM', color: 'yellow', description: 'Potential for sandwich attacks in high-value trades' },
+  { level: 'HIGH', color: 'red', description: 'High risk of frontrunning and sandwich attacks' }
 ];
 
 const RiskIcon: React.FC<{ level: string }> = ({ level }) => {
   switch (level) {
-    case 'Low':
+    case 'LOW':
       return <Shield className="text-green-500" />;
-    case 'Medium':
+    case 'MEDIUM':
       return <AlertTriangle className="text-yellow-500" />;
-    case 'High':
+    case 'HIGH':
       return <XOctagon className="text-red-500" />;
     default:
       return null;
@@ -22,9 +22,9 @@ const RiskIcon: React.FC<{ level: string }> = ({ level }) => {
 };
 
 const colorClasses: Record<string, { bg: string; border: string }> = {
-  green: { bg: 'bg-green-50', border: 'border-green-200' },
-  yellow: { bg: 'bg-yellow-50', border: 'border-yellow-200' },
-  red: { bg: 'bg-red-50', border: 'border-red-200' }
+  LOW: { bg: 'bg-green-50', border: 'border-green-200' },
+  MEDIUM: { bg: 'bg-yellow-50', border: 'border-yellow-200' },
+  HIGH: { bg: 'bg-red-50', border: 'border-red-200' }
 };
 
 export const MevRiskMatrix: React.FC = () => {
@@ -35,7 +35,7 @@ export const MevRiskMatrix: React.FC = () => {
         {riskLevels.map((risk) => (
           <div 
             key={risk.level}
-            className={`${colorClasses[risk.color].bg} ${colorClasses[risk.color].border} p-4 rounded-lg`}
+            className={`${colorClasses[risk.level].bg} ${colorClasses[risk.level].border} p-4 rounded-lg`}
           >
             <div className="flex items-center space-x-3">
               <RiskIcon level={risk.level} />

@@ -69,7 +69,7 @@ export const MarketDataFeeds: React.FC = () => {
     };
 
     // Subscribe to price updates
-    const unsubscribe = priceFeed.subscribe('price', handlePriceUpdate);
+    const unsubscribe = priceFeed.subscribe(handlePriceUpdate);
 
     // Set initial status
     setStatus('connected');

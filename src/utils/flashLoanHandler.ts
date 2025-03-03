@@ -1,5 +1,4 @@
 import { ethers } from 'ethers';
-import { RiskManager } from './riskManager';
 
 export interface FlashLoanParams {
   amount: string;
@@ -12,13 +11,10 @@ export interface FlashLoanParams {
 
 export class FlashLoanHandler {
   private static instance: FlashLoanHandler;
-  private riskManager: RiskManager;
-  private readonly MIN_PROFIT_THRESHOLD = '0.05'; // 5% minimum profit
-  private readonly MAX_GAS_PRICE = '500'; // Gwei
-  private readonly SAFETY_BUFFER = '1.02'; // 2% safety buffer for repayment
+  private readonly MIN_PROFIT_THRESHOLD = process.env.MIN_PROFIT_THRESHOLD || '0.05'; // 5% minimum profit
+  private readonly MAX_GAS_PRICE = process.env.MAX_GAS_PRICE || '500'; // Gwei
 
   private constructor() {
-    this.riskManager = RiskManager.getInstance();
   }
 
   public static getInstance(): FlashLoanHandler {
@@ -46,10 +42,6 @@ export class FlashLoanHandler {
     if (params.deadline < Date.now() + 2) { // 2 blocks minimum
       throw new Error('Deadline too close for safe execution');
     }
-
-    // Calculate required repayment with safety buffer
-    const loanAmount = BigInt(ethers.parseUnits(params.amount, 18));
-    const repaymentAmount = loanAmount * BigInt(102) / BigInt(100); // 2% safety buffer
 
     return true;
   }
@@ -98,17 +90,66 @@ export class FlashLoanHandler {
     return maxFeePerGas ?? 50000000000n; // 50 gwei default
   }
 
-  private async simulateExecution(_params: FlashLoanParams): Promise<{ success: boolean; error: string | null }> {
-    // Implement simulation logic
-    return { success: true, error: null };
+  private async simulateExecution(params: FlashLoanParams): Promise<{ success: boolean; error: string | null }> {
+    try {
+      // Basic simulation - check if the expected profit covers the gas cost
+      const gasCost = await this.estimateGasCost(params);
+      const expectedProfitWei = ethers.parseUnits(params.expectedProfit, 18);
+      if (expectedProfitWei <= gasCost) {
+        return { success: false, error: 'Expected profit does not cover gas costs' };
+      }
+      return { success: true, error: null };
+    } catch (error) {
+      return { success: false, error: (error as Error).message };
+    }
   }
 
-  private async sendFlashLoanTransaction(_params: FlashLoanParams): Promise<string> {
-    // Implementation of actual flash loan transaction
-    return '0x...'; // Return transaction hash
+  private async sendFlashLoanTransaction(params: FlashLoanParams): Promise<string> {
+    try {
+      const provider = new ethers.JsonRpcProvider(process.env.PROVIDER_URL);
+      const wallet = new ethers.Wallet(process.env.PRIVATE_KEY as string, provider);
+
+      // AAVE V2 FlashLoan contract address (replace with actual address)
+      const flashLoanContractAddress = '0x794a61358D6845594F94dc1DB027E1266356b045';
+      const flashLoanContract = new ethers.Contract(
+        flashLoanContractAddress,
+        [
+          'function executeOperation(address[] calldata assets, uint256[] calldata amounts, uint256 premium, address initiator, bytes calldata params) external returns (bool)'
+        ],
+        wallet
+      );
+
+      // Replace with actual parameters for the flash loan
+      const assets = [params.token];
+      const amounts = [ethers.parseUnits(params.amount, 18)];
+      const premium = ethers.parseUnits('0', 18); // No premium for simulation
+      const initiator = wallet.address;
+      const loanParams = ethers.toUtf8Bytes('');
+
+      const tx = await flashLoanContract.executeOperation(assets, amounts, premium, initiator, loanParams, {
+        gasLimit: 1000000, // Adjust gas limit as needed
+      });
+
+      await tx.wait();
+      return tx.hash;
+    } catch (error) {
+      throw new Error(`Transaction failed: ${(error as Error).message}`);
+    }
   }
 
-  private async monitorTransaction(_txHash: string): Promise<void> {
-    // Monitor transaction status and handle reverts
+  private async monitorTransaction(txHash: string): Promise<void> {
+    try {
+      const provider = new ethers.JsonRpcProvider(process.env.PROVIDER_URL);
+      const receipt = await provider.getTransactionReceipt(txHash);
+
+      if (receipt && receipt.status === 1) {
+        console.log(`Transaction ${txHash} successful`);
+      } else {
+        throw new Error(`Transaction ${txHash} failed`);
+      }
+    } catch (error) {
+      console.error(`Error monitoring transaction ${txHash}:`, error);
+      throw error;
+    }
   }
 }

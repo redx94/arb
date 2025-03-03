@@ -7,10 +7,15 @@ describe('Trade Validation', () => {
       id: '1',
       type: 'BUY' as const,
       platform: 'DEX' as const,
-      amount: 1000n,
-      price: 1000n,
+      amount: 1000,
+      price: 1000,
       timestamp: Date.now(),
-      status: 'PENDING' as const
+      status: 'PENDING' as const,
+      effectivePrice: 0,
+      profitLoss: 0,
+      priceImpact: 0,
+      gasCost: 0,
+      warnings: []
     };
 
     expect(validateTrade(trade)).toBe(true);
@@ -21,10 +26,15 @@ describe('Trade Validation', () => {
       id: '1',
       type: 'BUY' as const,
       platform: 'DEX' as const,
-      amount: 1000n,
-      price: 1000n,
+      amount: 1000,
+      price: 1000,
       timestamp: Date.now(),
-      status: 'PENDING' as const
+      status: 'PENDING' as const,
+      effectivePrice: 0,
+      profitLoss: 0,
+      priceImpact: 0,
+      gasCost: 0,
+      warnings: []
     };
 
     expect(validateTrade(trade)).toBe(false);

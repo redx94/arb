@@ -1,4 +1,4 @@
-import { Trade, PriceData } from '../types';
+import { Trade } from '../types';
 
 export class PerformanceAnalytics {
   private trades: Trade[] = [];

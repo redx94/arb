@@ -13,20 +13,27 @@
   "author": "Reece Dixon",
   "license": "MIT",
   "dependencies": {
-    "@aave/protocol-js": "^4.2.0",
-    "ethers": "^6.0.0",
+    "@aave/protocol-js": "^2.2.0",
     "@openzeppelin/contracts": "^4.8.0",
     "@truffle/hdwallet-provider": "^2.0.10",
-    "@types/react": "^19.0.10",
-    "@types/react-dom": "^19.0.4",
     "dotenv": "^16.0.0",
+    "ethers": "^6.13.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "truffle": "^5.5.7",
     "web3": "^4.16.0"
   },
   "devDependencies": {
+    "@types/node": "^22.13.8",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
-    "vite": "^6.2.0"
+    "jwt-decode": "^4.0.0",
+    "lucide-react": "^0.477.0",
+    "recharts": "^2.15.1",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.0",
+    "vitest": "^3.0.7",
+    "zustand": "^5.0.3"
   }
 }

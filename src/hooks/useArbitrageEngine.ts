@@ -16,11 +16,11 @@ export const useArbitrageEngine = () => {
   const handleStopped = () => setStatus('stopped');
   const handleError = (error: Error) => {
     logger.error('Arbitrage engine error:', error);
-    setErrors(prev => [...prev.slice(-4), error.message]);
+    setErrors((prev: string[]) => [...prev.slice(-4), error.message]);
   };
   const handleWarning = (warning: string) => {
     logger.warn('Arbitrage engine warning:', warning);
-    setWarnings(prev => [...prev.slice(-4), warning]);
+    setWarnings((prev: string[]) => [...prev.slice(-4), warning]);
   };
   const handleLatencyUpdate = (newLatency: number) => setLatency(newLatency);
 
@@ -38,4 +38,23 @@ export const useArbitrageEngine = () => {
       engine.off('warning', handleWarning);
       engine.off('latencyUpdate', handleLatencyUpdate);
     };
-  }, [engine]);};
+  }, [engine]);
+
+  const start = () => engine.start();
+  const stop = () => engine.stop();
+  const isRunning = engine.isRunning();
+  const resetSystem = () => { /* TODO: Implement resetSystem */ };
+  const updateSettings = (_settings: any) => { /* TODO: Implement updateSettings */ };
+
+  return {
+    status,
+    latency,
+    errors,
+    warnings,
+    start,
+    stop,
+    isRunning,
+    resetSystem,
+    updateSettings,
+  };
+};
