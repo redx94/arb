@@ -1,58 +1,64 @@
 import { ethers } from 'ethers';
-
-interface SecurityConfig {
-  maxGasPrice: string;
-  maxContractSize: number;
-  requiredENS: boolean;
-  sandboxMode: boolean;
-}
+import { CircuitBreaker } from './CircuitBreaker';
+import { GasOptimizer } from '../gas/GasOptimizer';
+import { RateLimiter } from '../security/RateLimiter';
 
 export class SecurityManager {
-  constructor(
-    private readonly config: SecurityConfig,
-    private readonly logger: { error: (msg: string, error: Error) => void }
-  ) {}
-
-  private async validateContract(address: string): Promise<{ valid: boolean; reason?: string }> {
-    try {
-      const provider = new ethers.JsonRpcProvider();
-      const code = await provider.getCode(address);
-      
-      if (code.length > this.config.maxContractSize) {
-        return { valid: false, reason: 'Contract size exceeds maximum allowed' };
-      }
-      
-      if (await this.hasKnownVulnerabilities(code)) {
-        return { valid: false, reason: 'Contract contains known vulnerabilities' };
-      }
-      
-      return { valid: true };
-    } catch (error) {
-      this.logger.error('Contract validation failed:', error as Error);
-      return { valid: false, reason: 'Contract validation failed' };
+  private static circuitBreaker = new CircuitBreaker();
+  private static rateLimiter = new RateLimiter(5); // 5 requests/minute
+  
+  static verifyLiveEnvironment() {
+    if (!process.env.PRIVATE_KEY?.startsWith('0x') || 
+        !process.env.PROVIDER_URL?.includes('mainnet')) {
+      throw new Error('Invalid production environment configuration');
     }
-  }
-
-  private async validateENS(address: string): Promise<{ valid: boolean; reason?: string }> {
-    if (!this.config.requiredENS) return { valid: true };
     
-    try {
-      const provider = new ethers.JsonRpcProvider();
-      const name = await provider.lookupAddress(address);
-      
-      if (!name) {
-        return { valid: false, reason: 'ENS name required for large trades' };
-      }
-      
-      return { valid: true };
-    } catch (error) {
-      this.logger.error('ENS validation failed:', error as Error);
-      return { valid: false, reason: 'ENS validation failed' };
+    if (this.circuitBreaker.isTriggered()) {
+      throw new Error('Trading halted by circuit breaker');
     }
   }
 
-  private async hasKnownVulnerabilities(code: string): Promise<boolean> {
-    // Implementation placeholder
-    return false;
+  static async analyzeTxRisk(tx: ethers.Transaction): Promise<string[]> {
+    const warnings = [];
+    
+    // Gas validation
+    const estimatedGas = await GasOptimizer.estimateGasCost(tx);
+    if (estimatedGas.gt(ethers.parseUnits('0.1', 'ether'))) {
+      warnings.push('Gas cost exceeds 0.1 ETH threshold');
+      this.circuitBreaker.recordIncident();
+    }
+
+    // Slippage check
+    if (tx.data.includes('0x') && tx.value.gt(ethers.parseEther('100'))) {
+      warnings.push('Large value transfer detected');
+    }
+
+    // Rate limiting
+    if (!this.rateLimiter.checkLimit()) {
+      throw new Error('Rate limit exceeded - too many transactions');
+    }
+
+    return warnings;
+  }
+
+  static async simulateTransaction(tx: ethers.Transaction): Promise<boolean> {
+    try {
+      const simulator = new ethers.JsonRpcProvider(process.env.PROVIDER_URL);
+      await simulator.call(tx);
+      return true;
+    } catch (error) {
+      this.circuitBreaker.recordIncident();
+      return false;
+    }
+  }
+
+  static logError(error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.error(`[SECURITY][${new Date().toISOString()}]`, err);
+    this.circuitBreaker.recordIncident();
+    
+    if (this.circuitBreaker.isTriggered()) {
+      console.error('[CIRCUIT BREAKER] Trading suspended until manual reset');
+    }
   }
 }

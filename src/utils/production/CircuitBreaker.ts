@@ -1,35 +1,30 @@
-interface CircuitBreakerConfig {
-  minDataPoints: number;
-  recoveryThreshold: number;
-  maxSlippage: number;
-  emergencyContacts: string[];
+export class CircuitBreaker {
+  private incidentCount = 0;
+  private lastIncident = 0;
+  private readonly TRIGGER_THRESHOLD = 3; // 3 incidents in 5 minutes
+  private readonly COOLDOWN_PERIOD = 300000; // 5 minutes in ms
+
+  isTriggered(): boolean {
+    return this.incidentCount >= this.TRIGGER_THRESHOLD && 
+           Date.now() - this.lastIncident < this.COOLDOWN_PERIOD;
   }
 
-export class CircuitBreaker {
-  private readonly config: CircuitBreakerConfig = {
-    minDataPoints: 10,
-    recoveryThreshold: 5,
-    maxSlippage: 0.03,
-    emergencyContacts: [
-      'admin@example.com',
-      'security@example.com'
-    ]
-  };
-  // Add slippage check
-  private async checkSlippage(params: {
-    expectedPrice: number;
-    executionPrice: number;
-  }): Promise<{ passed: boolean; reason?: string }> {
-    const { expectedPrice, executionPrice } = params;
-    const slippage = Math.abs(expectedPrice - executionPrice) / expectedPrice;
+  recordIncident(): void {
+    this.incidentCount++;
+    this.lastIncident = Date.now();
     
-    if (slippage > this.config.maxSlippage) {
-      return {
-        passed: false,
-        reason: `Slippage ${(slippage * 100).toFixed(2)}% exceeds maximum`
-      };
+    if (this.isTriggered()) {
+      this.sendAlert();
     }
-    
-    return { passed: true };
-}
+  }
+
+  reset(): void {
+    this.incidentCount = 0;
+    this.lastIncident = 0;
+  }
+
+  private sendAlert(): void {
+    console.error('[CIRCUIT BREAKER] Safety threshold exceeded!');
+    // TODO: Integrate with monitoring system
+  }
 }
