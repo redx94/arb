@@ -11,8 +11,9 @@ export interface FlashLoanParams {
 
 export class FlashLoanHandler {
   private static instance: FlashLoanHandler;
-  private readonly MIN_PROFIT_THRESHOLD = process.env.MIN_PROFIT_THRESHOLD || '0.05'; // 5% minimum profit
-  private readonly MAX_GAS_PRICE = process.env.MAX_GAS_PRICE || '500'; // Gwei
+  private readonly MIN_PROFIT_THRESHOLD = process.env.MIN_PROFIT_THRESHOLD || '0.05';
+  private readonly MAX_GAS_PRICE = process.env.MAX_GAS_PRICE || '500';
+  private readonly FLASH_LOAN_CONTRACT_ADDRESS = process.env.FLASH_LOAN_CONTRACT_ADDRESS || '0x794a61358D6845594F94dc1DB027E1266356b045'; // AAVE V2 FlashLoan contract address (replace with actual address)
 
   private constructor() {
   }
@@ -109,10 +110,8 @@ export class FlashLoanHandler {
       const provider = new ethers.JsonRpcProvider(process.env.PROVIDER_URL);
       const wallet = new ethers.Wallet(process.env.PRIVATE_KEY as string, provider);
 
-      // AAVE V2 FlashLoan contract address (replace with actual address)
-      const flashLoanContractAddress = '0x794a61358D6845594F94dc1DB027E1266356b045';
       const flashLoanContract = new ethers.Contract(
-        flashLoanContractAddress,
+        this.FLASH_LOAN_CONTRACT_ADDRESS,
         [
           'function executeOperation(address[] calldata assets, uint256[] calldata amounts, uint256 premium, address initiator, bytes calldata params) external returns (bool)'
         ],

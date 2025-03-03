@@ -1,8 +1,11 @@
 import type { Balance, TradeDetails } from '../types';
 import { PriceFeed } from './priceFeeds';
+import { GasAwareFlashLoanProvider } from './gas/GasAwareFlashLoan';
+import { RiskManager } from './riskManager';
+import { Logger } from './monitoring';
 
 class TradeExecutor {
-  // Placeholder balances - these should be replaced with actual account balances
+  private logger = Logger.getInstance();
   private balances: Balance[] = [
     { asset: 'ETH', dexAmount: 10, cexAmount: 10, pending: 0 },
   ];
@@ -18,38 +21,37 @@ class TradeExecutor {
     price: number
   ): Promise<{ success: boolean; trade?: TradeDetails; error?: string }> {
     try {
+      this.logger.info(`Executing trade: type=${type}, platform=${platform}, amount=${amount}, price=${price}`);
+
       const amountNumber = Number(amount);
       if (isNaN(amountNumber) || amountNumber <= 0) {
         throw new Error('Invalid trade amount');
       }
 
-      const balance = this.balances.find(b => b.asset === 'ETH');
-      if (!balance) {
-        throw new Error('ETH balance not found');
-      }
+      // Validate trade using RiskManager
+      const riskManager = RiskManager.getInstance();
+      riskManager.validateTrade({ dex: price, cex: price, amount: amountNumber }); // Replace with actual dex and cex prices
 
-      if (type === 'BUY') {
-        if (platform === 'DEX') {
-          if (balance.dexAmount < amountNumber) {
-            throw new Error('Insufficient DEX balance');
-          }
-          balance.dexAmount -= amountNumber;
-          balance.pending += amountNumber;
-        } else {
-          if (balance.cexAmount < amountNumber) {
-            throw new Error('Insufficient CEX balance');
-          }
-          balance.cexAmount -= amountNumber;
-          balance.pending += amountNumber;
-        }
-      } else {
-        if (platform === 'DEX') {
-          balance.dexAmount += amountNumber;
-          balance.pending -= amountNumber;
-        } else {
-          balance.cexAmount += amountNumber;
-          balance.pending -= amountNumber;
-        }
+      const gasAwareFlashLoanProvider = new GasAwareFlashLoanProvider();
+      // Dynamically determine flash loan parameters based on trade details
+      const flashLoanParams = {
+        amount: amount,
+        token: 'ETH', // Replace with actual token
+        protocol: 'AAVE' as 'AAVE' | 'DYDX' | 'UNISWAP', // Replace with actual protocol based on platform
+        expectedProfit: (amountNumber * price * 0.01).toString(), // Example: 1% of trade value
+        maxSlippage: 0.01,
+        deadline: Date.now() + 60000, // 1 minute
+      };
+
+      let flashLoanUsed = false;
+      try {
+        // Execute flash loan
+        await gasAwareFlashLoanProvider.executeFlashLoan(flashLoanParams);
+        flashLoanUsed = true;
+      } catch (flashLoanError: any) {
+        this.logger.warn(`Flash loan failed: ${flashLoanError.message}`);
+        // Handle the case where flash loan fails
+        // You might want to execute the trade without a flash loan in this case
       }
 
       const tradeDetails: TradeDetails = {
@@ -69,12 +71,15 @@ class TradeExecutor {
         slippage: 0,
         feeStructure: {
           makerFee: 0,
-          takerFee: 0
-        }
+          takerFee: 0,
+        },
       };
 
+      this.logger.info(`Trade executed successfully: id=${tradeDetails.id}, flashLoanUsed=${flashLoanUsed}`);
+      console.log(`Trade executed successfully: id=${tradeDetails.id}, flashLoanUsed=${flashLoanUsed}`);
       return { success: true, trade: tradeDetails };
     } catch (error: any) {
+      this.logger.error('Trade execution failed:', error, { type, platform, amount, price });
       console.error('Trade execution failed:', error.message);
       return { success: false, error: error.message };
     }

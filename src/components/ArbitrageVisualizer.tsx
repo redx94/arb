@@ -1,41 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { LineChart } from './LineChart';
 import { PriceDisplay } from './PriceDisplay';
 import { ScenarioLoader } from './ScenarioLoader';
 import { MevRiskMatrix } from './MevRiskMatrix';
 import { ArbitrageWalkthrough } from './ArbitrageWalkthrough';
 import { TradeExecutor } from './TradeExecutor';
-import { PriceFeed } from '../utils/priceFeeds';
 import { PriceData, SimulationScenario } from '../types';
 
-export const ArbitrageVisualizer: React.FC = () => {
-  const [priceHistory, setPriceHistory] = useState<PriceData[]>([]);
-  const [useMockData, setUseMockData] = useState<boolean>(true);
-const [currentScenario, setCurrentScenario] = useState<SimulationScenario>({
-  name: 'Normal Market',
-  description: 'Normal market conditions',
-  networkConditions: {
-    latency: 50,
-    gasPrice: 20,
-    blockConfirmationTime: 5,
-    networkCongestion: 0.1,
-    networkLatency: 100,
-    blockTime: 10
-  },
-  assets: [],
-  duration: 60,
-  riskThreshold: 0.5
-});
+interface ArbitrageVisualizerProps {
+  useMockData: boolean;
+  setUseMockData: (useMockData: boolean) => void;
+  priceHistory: PriceData[];
+}
 
- useEffect(() => {
-    const priceFeed = PriceFeed.getInstance();
-    priceFeed.setMockMode(useMockData);
-    const handlePriceUpdate = (newPrice: any) => {
-      setPriceHistory(prev => [...prev.slice(-50), newPrice]);
-    };
-    const unsubscribe = priceFeed.subscribe(handlePriceUpdate);
-    return unsubscribe;
-  }, [useMockData]);
+export const ArbitrageVisualizer: React.FC<ArbitrageVisualizerProps> = ({ useMockData, setUseMockData, priceHistory }) => {
+  const [currentScenario, setCurrentScenario] = useState<SimulationScenario>({
+    name: 'Normal Market',
+    description: 'Normal market conditions',
+    networkConditions: {
+      latency: 50,
+      gasPrice: 20,
+      blockConfirmationTime: 5,
+      networkCongestion: 0.1,
+      networkLatency: 100,
+      blockTime: 10
+    },
+    assets: [],
+    duration: 60,
+    riskThreshold: 0.5
+  });
 
   return (
     <div className="space-y-8">
@@ -52,11 +45,7 @@ const [currentScenario, setCurrentScenario] = useState<SimulationScenario>({
         <ScenarioLoader onScenarioChange={setCurrentScenario} currentScenario={currentScenario} disabled={!useMockData} />
       </div>
       <LineChart data={priceHistory} />
-      <TradeExecutor priceData={priceHistory[priceHistory.length - 1]} onTradeComplete={(trade) => {
-  if ('timestamp' in trade && typeof trade.timestamp === 'number') {
-    // setTrades(prev => [...prev, { ...trade, timestamp: Number(trade.timestamp) }]);
-  }
-}} />
+      <TradeExecutor />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <MevRiskMatrix />
         <ArbitrageWalkthrough />

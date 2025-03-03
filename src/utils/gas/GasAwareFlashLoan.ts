@@ -5,9 +5,11 @@ import type { FlashLoanParams } from '../flashLoanHandler';
 
 const logger = Logger.getInstance();
 
-export class GasAwareFlashLoan {
+export class GasAwareFlashLoanProvider {
   private readonly gasOptimizer: GasOptimizer;
-  private readonly MIN_PROFIT_THRESHOLD = parseFloat(process.env.MIN_PROFIT_THRESHOLD_GAS_AWARE || '0.02'); // 2% minimum profit after gas
+  private readonly MIN_PROFIT_THRESHOLD = parseFloat(
+    process.env.MIN_PROFIT_THRESHOLD_GAS_AWARE || '0.02'
+  ); // 2% minimum profit after gas
 
   constructor() {
     this.gasOptimizer = GasOptimizer.getInstance();
@@ -29,7 +31,9 @@ export class GasAwareFlashLoan {
       );
 
       // Calculate total gas cost using native BigInt operations
-      const totalGasCost = BigInt(gasStrategy.baseGas) + BigInt(gasStrategy.priorityFee) * BigInt(gasStrategy.gasLimit);
+      const totalGasCost =
+        BigInt(gasStrategy.baseGas) +
+        BigInt(gasStrategy.priorityFee) * BigInt(gasStrategy.gasLimit);
 
       // Calculate net profit after gas
       const netProfit = BigInt(expectedProfit) - totalGasCost;
@@ -62,8 +66,12 @@ export class GasAwareFlashLoan {
     const amount = ethers.parseEther(params.amount);
 
     // Determine complexity using native BigInt comparisons
-    if (amount > ethers.parseEther('1000')) return 'high';
-    if (amount > ethers.parseEther('100')) return 'medium';
+    if (amount > ethers.parseEther('1000')) {
+      return 'high';
+    }
+    if (amount > ethers.parseEther('100')) {
+      return 'medium';
+    }
     return 'low';
   }
 
@@ -76,8 +84,11 @@ export class GasAwareFlashLoan {
     }
 
     if (profitMargin < this.MIN_PROFIT_THRESHOLD) {
-      const requiredProfitIncrease = Number(expectedProfit) * (this.MIN_PROFIT_THRESHOLD - profitMargin);
-      return `Profit margin too low. Need additional $${ethers.formatEther(requiredProfitIncrease)} in profit for viability.`;
+      const requiredProfitIncrease =
+        Number(expectedProfit) * (this.MIN_PROFIT_THRESHOLD - profitMargin);
+      return `Profit margin too low. Need additional $${ethers.formatEther(
+        requiredProfitIncrease
+      )} in profit for viability.`;
     }
 
     return 'Consider batching multiple operations to share gas costs.';
@@ -102,7 +113,7 @@ export class GasAwareFlashLoan {
       );
 
       const totalIndividualGas = individualGasEstimates.reduce(
-        (sum: bigint, strategy: any) => sum + BigInt(strategy.gasLimit),
+        (sum, strategy) => sum + BigInt(strategy.gasLimit),
         BigInt(0)
       );
 
@@ -117,11 +128,18 @@ export class GasAwareFlashLoan {
       return {
         batchedGas: BigInt(batchedGasStrategy.gasLimit),
         individualGas: totalIndividualGas,
-        savings: savings
+        savings
       };
     } catch (error) {
       logger.error('Failed to calculate batch savings:', error as Error);
       throw error;
     }
+  }
+
+  public async executeFlashLoan(params: FlashLoanParams): Promise<string> {
+    // Implement flash loan execution logic here
+    // This is a placeholder and needs to be replaced with actual flash loan implementation
+    console.log('Executing flash loan with params:', params);
+    return '0x...txHash...';
   }
 }

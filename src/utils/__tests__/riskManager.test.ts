@@ -20,7 +20,7 @@ describe('RiskManager', () => {
 
   it('should validate safe trade', () => {
     expect(() =>
-      riskManager.validateTrade({dex: mockPriceData.dex, cex: mockPriceData.cex})
+      riskManager.validateTrade({ dex: mockPriceData.dex, cex: mockPriceData.cex, amount: 1 })
     ).not.toThrow();
   });
 
@@ -31,19 +31,19 @@ describe('RiskManager', () => {
     };
 
     expect(() =>
-      riskManager.validateTrade({dex: manipulatedPrice.dex, cex: mockPriceData.cex})
+      riskManager.validateTrade({ dex: manipulatedPrice.dex, cex: mockPriceData.cex, amount: 1 })
     ).toThrow('Risk limit exceeded: Price difference exceeds 5% threshold.');
   });
 
   it('should enforce position size limits', () => {
     expect(() =>
-      riskManager.validateTrade({dex: mockPriceData.dex, cex: mockPriceData.cex})
+      riskManager.validateTrade({ dex: mockPriceData.dex, cex: mockPriceData.cex, amount: 1 })
     ).not.toThrow();
   });
 
   it('should handle mock mode correctly', () => {
     expect(() =>
-      riskManager.validateTrade({dex: mockPriceData.dex, cex: mockPriceData.cex})
+      riskManager.validateTrade({ dex: mockPriceData.dex, cex: mockPriceData.cex, amount: 1 })
     ).not.toThrow();
   });
 });

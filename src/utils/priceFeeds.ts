@@ -1,9 +1,10 @@
+import axios from 'axios';
 import type { PriceData } from '../types';
 
 export class PriceFeed {
   private static instance: PriceFeed;
   private subscribers: { [key: string]: (data: any) => void } = {};
-  private mockMode: boolean = false;
+  private mockMode: boolean = true;
   private mockData: PriceData[] = [];
 
   private constructor() {}
@@ -39,21 +40,31 @@ export class PriceFeed {
   }
 
   public async getCurrentPrice(): Promise<PriceData> {
-    // Dummy implementation for getting current price
-    return this.mockMode
-      ? {
-          token: '',
-          price: 0,
-          dex: Math.random() * 1000,
-          cex: Math.random() * 1000,
-          timestamp: Date.now(),
-        }
-      : {
-          token: '',
-          price: 0,
-          dex: Math.random() * 1000,
-          cex: Math.random() * 1000,
-          timestamp: Date.now(),
-        };
+    // Fetch current price from CoinGecko API
+    try {
+      const apiUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd';
+      console.log('Fetching price from CoinGecko API:', apiUrl);
+      const response = await axios.get(apiUrl);
+      console.log('CoinGecko API response:', response.data);
+      const data = response.data.ethereum;
+      const price = data.usd;
+
+      return {
+        token: 'ETH',
+        price: price,
+        dex: price, // Assuming DEX price is the same as the general price
+        cex: price, // Assuming CEX price is the same as the general price
+        timestamp: Date.now(),
+      };
+    } catch (error) {
+      console.error('Failed to fetch price from CoinGecko API:', error);
+      return {
+        token: 'ETH',
+        price: 0,
+        dex: 0,
+        cex: 0,
+        timestamp: Date.now(),
+      };
+    }
   }
 }
