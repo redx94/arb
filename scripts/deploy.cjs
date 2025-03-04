@@ -1,68 +1,40 @@
 // scripts/deploy.js
-
 require("dotenv").config();
-const Web3 = require("web3");
-const fs = require("fs");
 const path = require("path");
-const { Wallet } = require('@ethereumjs/wallet');
-const { Common } = require('@ethereumjs/common');
-const { Transaction } = require('@ethereumjs/tx');
+const fs = require("fs");
+const ethers = require('ethers');
 
 // Load compiled contract artifact
-const artifactPath = path.resolve(__dirname, "../build/contracts/ArbTrader.json");
+const artifactPath = path.resolve(__dirname, "../build/contracts/HelloWorld.json"); // Deploy HelloWorld
 const { abi, bytecode } = JSON.parse(fs.readFileSync(artifactPath, "utf8"));
 
 async function deploy() {
-  try {
-    // Set up provider using environment variables
-    const privateKey = Buffer.from(process.env.PRIVATE_KEY, 'hex');
-    const providerUrl = process.env.PROVIDER_URL;
+    try {
+        const privateKey = process.env.PRIVATE_KEY;
+        const providerUrl = process.env.PROVIDER_URL;
 
-    const web3 = new Web3(providerUrl);
-    const wallet = Wallet.fromPrivateKey(privateKey);
-    const account = wallet.address;
+        if (!privateKey || !providerUrl) {
+            throw new Error("Missing PRIVATE_KEY, PROVIDER_URL in .env");
+        }
 
-    console.log("Deploying from account:", account.toString('hex'));
+        const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+        const wallet = new ethers.Wallet(privateKey, provider);
+        const deployer = wallet.connect(provider);
 
-    const deployOptions = {
-      data: bytecode,
-      arguments: []
-    };
+        console.log("Deploying HelloWorld from address:", deployer.address); // Indicate HelloWorld deployment
 
-    const common = new Common({ chain: 'mainnet', hardfork: 'paris' });
+        const factory = new ethers.ContractFactory(abi, bytecode, deployer);
+        const contract = await factory.deploy(); // Deploy HelloWorld - no constructor args
 
-    // Estimate gas limit
-    const gasLimit = await new web3.eth.Contract(abi)
-      .deploy(deployOptions)
-      .estimateGas({ from: account.toString('hex') });
+        await contract.waitForDeployment();
 
-    // Get gas price
-    const gasPrice = await web3.eth.getGasPrice();
+        console.log("HelloWorld contract deployed to:", contract.target); // Indicate HelloWorld deployment
+        console.log("Deployment transaction:", contract.deploymentTransaction().hash);
 
-    // Nonce
-    const nonce = await web3.eth.getTransactionCount(account.toString('hex'), 'pending');
-
-    // Create transaction
-    const txData = {
-      nonce: web3.utils.toHex(nonce),
-      gasLimit: web3.utils.toHex(gasLimit),
-      gasPrice: web3.utils.toHex(gasPrice),
-      data: bytecode,
-    };
-
-    const tx = Transaction.fromTxData(txData, { common });
-    const signedTx = tx.sign(privateKey);
-    const serializedTx = signedTx.serialize();
-
-    // Send transaction
-    const receipt = await web3.eth.sendSignedTransaction('0x' + serializedTx.toString('hex'));
-
-    console.log("Contract deployed at address:", receipt.contractAddress);
-
-  } catch (error) {
-    console.error("Deployment failed:", error);
-    process.exit(1);
-  }
+    } catch (error) {
+        console.error("HelloWorld deployment failed:", error); // Indicate HelloWorld deployment failure
+        process.exit(1);
+    }
 }
 
-deploy().catch(error => console.error("Top level deployment error:", error));
+deploy().catch(error => console.error("Deployment error:", error));

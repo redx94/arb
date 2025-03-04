@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   build: {
     rollupOptions: {
+      input: 'src/main.tsx',
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
@@ -19,6 +20,7 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react']
   },
+  base: './',
   server: {
     port: 5173,
     strictPort: true,

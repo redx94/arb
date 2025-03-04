@@ -1,14 +1,17 @@
-import type { Balance, TradeDetails } from '../types';
-import { PriceFeed } from './priceFeeds';
-import { GasAwareFlashLoanProvider } from './gas/GasAwareFlashLoan';
-import { RiskManager } from './riskManager';
-import { Logger } from './monitoring';
+import type { Balance, TradeDetails } from '../types/index.js'; // Corrected import path
+import { PriceFeed } from './priceFeeds.js'; // Added .js extension
+import { GasAwareFlashLoanProvider } from './gas/GasAwareFlashLoan.js'; // Added .js extension
+import { RiskManager } from './riskManager.js'; // Added .js extension
+import { Logger } from './monitoring.js'; // Added .js extension
+import { walletManager } from './wallet.js'; // Added .js extension
+import { ethers } from 'ethers'; // Import ethers
 
 class TradeExecutor {
   private logger = Logger.getInstance();
   private balances: Balance[] = [
     { asset: 'ETH', dexAmount: 10n, cexAmount: 10n, pending: 0 }, // bigint - Corrected initialization
   ];
+  private walletManagerInstance = walletManager; // Instantiate WalletManager
 
   public getBalances(): Balance[] {
     return this.balances;
@@ -16,7 +19,7 @@ class TradeExecutor {
 
   public async executeTrade(
     type: 'BUY' | 'SELL',
-    platform: string,
+    platform: 'dex' | 'cex', // Enforce 'dex' | 'cex' type
     amount: string,
     price: bigint // bigint
   ): Promise<{ success: boolean; trade?: TradeDetails; error?: string }> {
@@ -31,7 +34,7 @@ class TradeExecutor {
       // Validate trade using RiskManager
       const riskManager = RiskManager.getInstance();
       const priceFeed = PriceFeed.getInstance();
-      const priceData = await priceFeed.getCurrentPrice();
+      const priceData = await priceFeed.getCurrentPrice(platform); // Pass platform argument
       if (!priceData) {
         throw new Error('Failed to fetch current price');
       }
@@ -94,6 +97,10 @@ class TradeExecutor {
 
       this.logger.info(`Trade executed successfully: id=${tradeDetails.id}, flashLoanUsed=${flashLoanUsed}, tradeDetails=${JSON.stringify(tradeDetails)}`);
       console.log(`Trade executed successfully: id=${tradeDetails.id}, flashLoanUsed=${flashLoanUsed}, tradeDetails=${JSON.stringify(tradeDetails)}`);
+
+      // Deposit profit to wallet
+      await this.depositProfit(tradeDetails);
+
       return { success: true, trade: tradeDetails };
     } catch (error: any) {
       this.logger.error('Trade execution failed:', error, { type, platform, amount, price });
@@ -106,6 +113,36 @@ class TradeExecutor {
     // Basic profit calculation: (sell price - buy price) * amount
     const profitBigint = (trade.type === 'SELL' ? 1n : -1n) * trade.amount * (trade.effectivePrice - trade.price);
     return Number(profitBigint); // Convert bigint to number before returning
+  }
+
+  private async depositProfit(tradeDetails: TradeDetails): Promise<void> {
+    try {
+      const profit = await this.calculateProfit(tradeDetails); // Await profit calculation
+      const walletAddress = process.env.WALLET_ADDRESS; // Get wallet address from env variable
+
+      if (!walletAddress) {
+        this.logger.error('WALLET_ADDRESS environment variable not set.');
+        return;
+      }
+
+      if (profit <= 0) {
+        this.logger.info('No profit to deposit.');
+        return;
+      }
+
+      const value = ethers.utils.parseEther(String(profit)); // Use ethers.utils.parseEther
+      // Use bigint for profit calculation
+      const profitBigint = BigInt(Math.round(profit * Number(tradeDetails.amount))); 
+      const tx = await this.walletManagerInstance.signTransaction(
+        '0xBBAE4f5F0Ec60fD8796fD92F0DB66893ec2c9e0a', // Replaced placeholder
+        walletAddress,
+        value.toString()
+      );
+      const txHash = await this.walletManagerInstance.sendTransaction(tx);
+      this.logger.info(`Profit deposited to wallet ${walletAddress}, TX hash: ${txHash}`);
+    } catch (error: any) {
+      this.logger.error('Error depositing profit:', error);
+    }
   }
 }
 

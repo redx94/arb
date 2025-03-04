@@ -9,7 +9,7 @@
     "migrate": "truffle migrate",
     "test": "vitest",
     "dev": "vite",
-    "build": "vite build index.html",
+    "build": "vite build src/main.tsx",
     "build:backend": "tsc -p tsconfig.json",
     "build:server": "tsc -p tsconfig.json"
   },

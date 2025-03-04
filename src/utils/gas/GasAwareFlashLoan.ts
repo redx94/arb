@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { GasOptimizer } from './GasOptimizer.js';
+import { GasOptimizer } from './GasOptimizer';
 import { Logger } from '../monitoring.js';
 import type { FlashLoanParams } from '../flashLoanHandler.js';
 import { AaveIntegration } from '../protocols/aaveIntegration.js';

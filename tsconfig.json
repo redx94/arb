@@ -10,7 +10,7 @@
     "moduleResolution": "Node16",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": false,
+    "noEmit": true,
     "jsx": "react-jsx",
     "strict": false,
     "noImplicitAny": true,
@@ -30,15 +30,15 @@
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": true,
     "skipLibCheck": true,
-    "declaration": false,
-    "outDir": "./dist"
+    "declaration": false
   },
   "include": [
     "src",
     "utils",
     "scripts",
     "components",
-    "test"
+    "test",
+    "index.html"
   ],
   "exclude": [
     "node_modules"

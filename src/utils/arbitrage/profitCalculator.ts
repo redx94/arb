@@ -1,6 +1,6 @@
 import * as ethers from "ethers";
 import { Logger } from "../monitoring/index.js";
-import { PriceFeed } from "../priceFeeds";
+import { PriceFeed } from "../priceFeeds.js";
 
 const logger = Logger.getInstance();
 const getRandomChange = () => (Math.random() - 0.5) * 0.1; // -5% to +5%
@@ -32,8 +32,8 @@ export class ProfitCalculator {
             const totalCosts: number = gasCost + flashLoanCost + slippageCost;
             const netProfit: number = grossProfit - totalCosts;
 
-            const netProfitBN = ethers.toBigInt(netProfit);
-            const minProfitThresholdBN = ethers.toBigInt(this.MIN_PROFIT_THRESHOLD);
+            const netProfitBN = ethers.BigNumber.from(netProfit);
+            const minProfitThresholdBN = ethers.BigNumber.from(this.MIN_PROFIT_THRESHOLD);
 
             console.log('grossProfit:', grossProfit.toString());
             console.log('totalCosts:', totalCosts.toString());
@@ -73,7 +73,7 @@ async calculateCosts(amount: number, price: number, _priceData?: any): Promise<{
     }
 
     async getGasPrice(): Promise<any> {
-        const provider = new ethers.JsonRpcProvider(process.env.PROVIDER_URL);
+        const provider = new ethers.providers.JsonRpcProvider(process.env.PROVIDER_URL);
         const feeData = await provider.getFeeData();
         const gasPrice: any = feeData.maxFeePerGas || feeData.gasPrice || Number('10');
         return gasPrice;

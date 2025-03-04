@@ -36,7 +36,7 @@ export class ArbitrageEngine extends EventEmitter {
     if (!this.running) return;
     this.running = false;
     this.emit('stopped');
-    PriceFeed.getInstance().unsubscribe(this.handlePrice);
+    PriceFeed.getInstance().subscribe(this.handlePrice); // Correct typo to 'subscribe'
   }
 
   public isRunning(): boolean {
@@ -68,7 +68,7 @@ export class ArbitrageEngine extends EventEmitter {
 
         // Execute trade - Assuming buying on DEX and selling on CEX for arbitrage
         const dexPriceBigInt = BigInt(Math.round(dexPriceData.price));
-        const tradeResult = await tradeExecutor.executeTrade('BUY', 'DEXPlatform', tradeAmount, dexPriceBigInt); // Assuming 'DEXPlatform' for DEX trades
+        const tradeResult = await tradeExecutor.executeTrade('BUY', 'dex', tradeAmount, dexPriceBigInt); // Use 'dex' platform
 
         if (tradeResult.success) {
           this.logger.info(`Trade executed successfully: id=${tradeResult.trade?.id}`);

@@ -1,79 +1,59 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {IPoolAddressesProvider} from "@aave/core-v3/contracts/interfaces/IPoolAddressesProvider.sol"; // Import IPoolAddressesProvider
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {FlashLoanReceiverBase} from "@aave/core-v3/contracts/flashloan/base/FlashLoanReceiverBase.sol";
+import {IPool} from "@aave/core-v3/contracts/interfaces/IPool.sol"; // Import IPool interface
 
-/// @title ArbTrader: Optimized Arbitrage Trading Contract
-/// @notice This contract enables the owner to deposit funds, execute arbitrage trades,
-///         and withdraw profits while ensuring minimal gas usage and robust security.
-contract ArbTrader is Ownable, ReentrancyGuard {
-    // --- Events ---
-    event Deposited(address indexed depositor, uint256 amount);
-    event Withdrawn(address indexed recipient, uint256 amount);
-    event ArbitrageExecuted(address indexed executor, uint256 profit);
+contract ArbTrader is FlashLoanReceiverBase {
+    address payable public owner;
 
-    // --- Modifiers ---
-    modifier nonZero(uint256 amount) {
-        require(amount > 0, "Amount must be greater than zero");
-        _;
+    constructor(IPoolAddressesProvider _poolAddressesProvider) FlashLoanReceiverBase(_poolAddressesProvider) { // Use IPoolAddressesProvider
+        owner = payable(msg.sender);
     }
 
-    // --- Functions ---
+    function executeOperation(
+        address[] calldata assets,
+        uint256[] calldata amounts,
+        uint256[] calldata premiums,
+        address initiator,
+        bytes calldata params
+    ) external override returns (bool) { // Removed payable keyword
+        // 1. Execute arbitrage trade logic here (DEX/CEX interactions would be complex in a contract)
+        // For now, placeholder logic: transfer flashloaned amount back + profit to owner
 
-    /// @notice Allows users to deposit ETH into the contract.
-    function deposit() external payable nonZero(msg.value) {
-        emit Deposited(msg.sender, msg.value);
+        // Assume profit is calculated elsewhere and passed in 'params' (for simplicity in this example)
+        uint256 profit = abi.decode(params, (uint256));
+
+        // Repay flash loan (principal + premium) - Aave base contract handles this
+
+        // Transfer profit to owner
+        payable(owner).transfer(profit);
+
+        return true; // Indicate operation success
     }
 
-    /// @notice Withdraws a specified amount of ETH; only callable by the owner.
-    /// @param amount The amount to withdraw.
-    function withdraw(uint256 amount) external onlyOwner nonReentrant nonZero(amount) {
-        require(address(this).balance >= amount, "Insufficient balance");
-        payable(msg.sender).transfer(amount);
-        emit Withdrawn(msg.sender, amount);
+    function requestFlashLoan(address _asset, uint256 _amount) external {
+        address[] memory assets = new address[](1);
+        assets[0] = _asset;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = _amount;
+        uint256 referralCode = 0;
+        bytes memory params = abi.encode(uint256(1 ether)); // Example: Pass in 1 ether profit for simplicity
+        uint256[] memory interestRateModes = new uint256[](1); // Add interestRateModes
+        interestRateModes[0] = 0; // Default interest rate mode
+
+        POOL.flashLoan(
+            address(this),         // receiverAddress
+            assets,                // assets
+            amounts,               // amounts
+            interestRateModes,     // interestRateModes - ADDED
+            address(this),         // onBehalfOf - using contract itself as onBehalfOf
+            params,                // params - ADDED
+            uint16(referralCode)  // referralCode - cast to uint16
+        );
     }
 
-    /// @notice Executes an arbitrage operation by performing a low-level call to a target contract.
-    /// @param target The address of the target contract where arbitrage logic resides.
-    /// @param data The calldata containing the arbitrage instructions.
-    /// @return success Returns true if the arbitrage call succeeded.
-    /// @dev Implement your specific arbitrage strategy logic as needed.
-    function executeArbitrage(address target, bytes calldata data)
-        external
-        onlyOwner
-        nonReentrant
-        returns (bool success)
-    {
-        require(isContract(target), "Target must be a contract");
-
-        // Perform a low-level call with the entire balance.
-        (bool callSuccess, ) = target.call{value: address(this).balance}(data);
-        require(callSuccess, "Arbitrage call failed");
-
-        // Placeholder for profit calculation logic; replace with your actual strategy.
-        uint256 profit = address(this).balance;
-        emit ArbitrageExecuted(msg.sender, profit);
-        return true;
-    }
-
-    /// @notice Determines if an address is a contract.
-    /// @param addr The address to check.
-    /// @return True if the address contains code, false otherwise.
-    function isContract(address addr) internal view returns (bool) {
-        uint256 size;
-        assembly {
-            size := extcodesize(addr)
-        }
-        return size > 0;
-    }
-
-    // --- Fallback Functions ---
-    receive() external payable {
-        emit Deposited(msg.sender, msg.value);
-    }
-
-    fallback() external payable {
-        emit Deposited(msg.sender, msg.value);
-    }
+    receive() external payable {}
 }

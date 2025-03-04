@@ -4,7 +4,7 @@ import type { Wallet, Transaction } from '../types/index.js';
 class WalletManager {
   private wallets: Map<string, Wallet> = new Map();
   public provider: ethers.JsonRpcProvider;
-    private mockMode: boolean = false; // Default to mock mode for development
+    private mockMode: boolean = true; // Default to mock mode for development
 
   constructor() {
     // Use mock provider for development
