@@ -1,21 +1,26 @@
-import { jsx as _jsx } from "react/jsx-runtime";
-import { useEffect, useState } from "react";
-import { GlobalErrorBoundary } from "./utils/errorBoundary";
-import { ArbitrageEngine } from "./utils/arbitrage/arbitrageEngine";
-import { Logger } from "./utils/monitoring";
-import Dashboard from "./components/dashboard/Dashboard";
-import { PriceFeed } from "./utils/priceFeeds";
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const jsx_runtime_1 = require("react/jsx-runtime");
+const react_1 = require("react");
+const errorBoundary_1 = require("./utils/errorBoundary");
+const arbitrageEngine_1 = require("./utils/arbitrage/arbitrageEngine");
+const monitoring_1 = require("./utils/monitoring");
+const Dashboard_1 = __importDefault(require("./components/dashboard/Dashboard"));
+const priceFeeds_1 = require("./utils/priceFeeds");
 const App = () => {
-    const [useMockData, setUseMockData] = useState(true);
-    const [priceHistory, setPriceHistory] = useState([
+    const [useMockData, setUseMockData] = (0, react_1.useState)(true);
+    const [priceHistory, setPriceHistory] = (0, react_1.useState)([
         { token: 'ETH', price: 2000, dex: 1990, cex: 2010, timestamp: Date.now(), amount: 1 },
         { token: 'ETH', price: 2010, dex: 2000, cex: 2020, timestamp: Date.now(), amount: 1 },
         { token: 'ETH', price: 2020, dex: 2010, cex: 2030, timestamp: Date.now(), amount: 1 },
     ]);
-    const logger = Logger.getInstance();
-    useEffect(() => {
-        const arbitrageEngine = ArbitrageEngine.getInstance();
-        const priceFeed = PriceFeed.getInstance();
+    const logger = monitoring_1.Logger.getInstance();
+    (0, react_1.useEffect)(() => {
+        const arbitrageEngine = arbitrageEngine_1.ArbitrageEngine.getInstance();
+        const priceFeed = priceFeeds_1.PriceFeed.getInstance();
         priceFeed.setMockMode(true);
         priceHistory.forEach(data => priceFeed.updatePrice(data));
         arbitrageEngine.start();
@@ -33,6 +38,6 @@ const App = () => {
             arbitrageEngine.removeListener('tradeExecuted', handleTradeExecution);
         };
     }, []);
-    return (_jsx(GlobalErrorBoundary, { children: _jsx(Dashboard, { useMockData: useMockData, setUseMockData: setUseMockData, priceHistory: priceHistory }) }));
+    return ((0, jsx_runtime_1.jsx)(errorBoundary_1.GlobalErrorBoundary, { children: (0, jsx_runtime_1.jsx)(Dashboard_1.default, { useMockData: useMockData, setUseMockData: setUseMockData, priceHistory: priceHistory }) }));
 };
-export default App;
+exports.default = App;

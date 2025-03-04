@@ -1,6 +1,6 @@
 import React from 'react';
-import TradeDetails from '../TradeDetails';
-import type { TradeDetails as TradeDetailsType } from '../../types';
+import TradeDetails from '../TradeDetails.js';
+import type { TradeDetails as TradeDetailsType } from '../../types/index.js';
 
 interface Props {
   tradeHistory: TradeDetailsType[];

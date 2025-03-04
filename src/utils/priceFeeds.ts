@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { PriceData } from '../types';
+import type { PriceData } from '../types/index.js';
 import { EventEmitter } from 'events';
 
 export class PriceFeed extends EventEmitter {
@@ -44,10 +44,6 @@ export class PriceFeed extends EventEmitter {
     return this.mockData;
   }
 
-  public unsubscribe(callback: (data: any) => void): void {
-    this.subscribers = Object.fromEntries(Object.entries(this.subscribers).filter(([, func]) => func !== callback));
-  }
-
   private getApiUrl(endpoint: string, params?: Record<string, string>): string {
     let url = `${this.apiBaseUrl}${endpoint}`;
     const allParams = { ...params };
@@ -58,20 +54,17 @@ export class PriceFeed extends EventEmitter {
     return queryParams ? `${url}?${queryParams}` : url;
   }
 
-  // Consider adding methods to handle API key updates if needed, e.g., for dynamic API key management.
-  // For now, API key is expected to be set as an environment variable.
-
-  public async getCurrentPrice(): Promise<PriceData | null> {
+  public async getCurrentPrice(platform: 'dex' | 'cex'): Promise<PriceData | null> {
     try {
       const apiUrl = this.getApiUrl('/simple/price', { ids: 'ethereum', vs_currencies: 'usd' });
-      console.log('Fetching price from CoinGecko API:', apiUrl);
+      console.log(`Fetching price from CoinGecko API for ${platform}:`, apiUrl);
       const response = await axios.get(apiUrl, {
         // Future: Authentication headers can be added here if needed.
       });
       console.log('CoinGecko API response:', response.data);
       if (!response.data || !response.data.ethereum || !response.data.ethereum.usd) {
         const errorMessage = 'Invalid response format from CoinGecko API';
-        console.error(errorMessage, 'Response data:', response.data); // Include response data in error log
+        console.error(errorMessage, 'Response data:', response.data);
         this.emit('error', errorMessage, response.data);
         return null;
       }
@@ -81,14 +74,15 @@ export class PriceFeed extends EventEmitter {
       return {
         token: 'ETH',
         price: price,
-        dex: price,
-        cex: price,
+        dex: platform === 'dex' ? price : 0, // Assign price based on platform
+        cex: platform === 'cex' ? price : 0, // Assign price based on platform
         timestamp: Date.now(),
+        platform: platform, // Set the platform
         amount: 1,
       };
     } catch (error: any) {
-      console.error('Failed to fetch price from CoinGecko API:', error);
-      this.emit('error', 'Failed to fetch price from CoinGecko API', error);
+      console.error(`Failed to fetch price from CoinGecko API for ${platform}:`, error);
+      this.emit('error', `Failed to fetch price from CoinGecko API for ${platform}`, error);
       return null;
     }
   }

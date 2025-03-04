@@ -1,10 +1,10 @@
 import { ethers } from 'ethers';
-import type { Wallet, Transaction } from '../types';
+import type { Wallet, Transaction } from '../types/index.js';
 
 class WalletManager {
   private wallets: Map<string, Wallet> = new Map();
   public provider: ethers.JsonRpcProvider;
-  private mockMode: boolean = true; // Default to mock mode for development
+    private mockMode: boolean = false; // Default to mock mode for development
 
   constructor() {
     // Use mock provider for development
@@ -25,15 +25,32 @@ class WalletManager {
     this.mockMode = enabled;
   }
 
+  public setLiveProvider(rpcUrl: string, apiKey?: string) {
+    try {
+      const url = apiKey ? `${rpcUrl}/${apiKey}` : rpcUrl;
+      this.provider = new ethers.JsonRpcProvider(url);
+      this.mockMode = false; // Disable mock mode when using live provider
+      console.log(`Live provider set to ${rpcUrl}`);
+    } catch (error) {
+      console.error('Error setting live provider:', error);
+      throw new Error('Failed to set live provider');
+    }
+  }
+
   private generateMockHash(): string {
     return '0x' + Array.from({ length: 64 }, () => 
       Math.floor(Math.random() * 16).toString(16)
     ).join('');
   }
 
-  public async createWallet(): Promise<Wallet> {
+  public async createWallet(privateKey?: string): Promise<Wallet> {
     try {
-      const wallet = ethers.Wallet.createRandom();
+      let wallet;
+      if (privateKey) {
+        wallet = new ethers.Wallet(privateKey); // Create wallet from private key
+      } else {
+        wallet = ethers.Wallet.createRandom(); // Create random wallet
+      }
       const newWallet: Wallet = {
         address: wallet.address,
         privateKey: wallet.privateKey,
@@ -176,5 +193,5 @@ class WalletManager {
 export const walletManager = new WalletManager();
 
 // Initialize with mock mode for development
-walletManager.setMockMode(true);
-walletManager.setProvider('http://localhost:8545');
+// walletManager.setMockMode(true);
+// walletManager.setProvider('http://localhost:8545');

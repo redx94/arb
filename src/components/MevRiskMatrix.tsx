@@ -1,6 +1,6 @@
 import React from 'react';
 import { Shield, AlertTriangle, XOctagon } from 'lucide-react';
-import type {} from '../types';
+import type {} from '../types/index.js';
 
 const riskLevels: { level: string; color: string; description: string }[] = [
   { level: 'LOW', color: 'green', description: 'Standard arbitrage with minimal MEV risk' },

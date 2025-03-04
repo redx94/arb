@@ -1,144 +1,134 @@
 import React from 'react';
 import { ArrowRight, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
-import type { TradeDetails } from '../types';
+import type { TradeDetails as TradeDetailsType } from '../types';
+import { FunctionComponent, createElement } from 'react';
 
 interface Props {
-  trade: TradeDetails;
+  trade: TradeDetailsType;
 }
 
-const TradeDetails: React.FC<Props> = ({ trade }: { trade: TradeDetails }) => {
+const TradeDetails: FunctionComponent<Props> = ({ trade }: { trade: TradeDetailsType }) => {
   const isSuccess = trade.status === 'COMPLETED';
   const hasWarnings = trade.warnings && trade.warnings.length > 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Trade #{trade.id.slice(0, 8)}</h3>
-        <div className="flex items-center">
-          {isSuccess ? (
-            <CheckCircle className="text-green-500 h-5 w-5 mr-2" />
-          ) : (
-            <XCircle className="text-red-500 h-5 w-5 mr-2" />
-          )}
-          <span className={`font-medium ${isSuccess ? 'text-green-600' : 'text-red-600'}`}>
-            {trade.status}
-          </span>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Type:</span>
-            <span className="font-medium">{trade.type} on {trade.platform}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Amount:</span>
-            <span className="font-medium">{Number(trade.amount)} ETH</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Price:</span>
-            <span className="font-medium">${Number(trade.price).toFixed(4)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Effective Price:</span>
-            <span className="font-medium">${Number(trade.effectivePrice).toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Profit/Loss:</span>
-            <span className={`font-medium ${Number(trade.profitLoss) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ${Math.abs(Number(trade.profitLoss)).toFixed(2)} {Number(trade.profitLoss) >= 0 ? '(Profit)' : '(Loss)'}
-            </span>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Gas Cost:</span>
-            <span className="font-medium">${trade.gasCost ? Number(trade.gasCost).toFixed(4) : '0.00'}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Slippage:</span>
-            <span className="font-medium">{((Number(trade.slippage) || 0) * 100).toFixed(2)}%</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Price Impact:</span>
-            <span className="font-medium">{(Number(trade.priceImpact) * 100).toFixed(2)}%</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Execution Time:</span>
-            <span className="font-medium">{trade.executionTime}ms</span>
-          </div>
-          {trade.blockNumber && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Block Number:</span>
-              <span className="font-medium">#{trade.blockNumber}</span>
-            </div>
-          )}
-        </div>
-      </div>
-      {trade.flashLoan && (
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-          <h4 className="font-medium text-blue-800 mb-2">Flash Loan Details</h4>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex justify-between">
-              <span className="text-blue-700">Protocol:</span>
-              <span className="font-medium">{trade.flashLoan?.protocol}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-blue-700">Amount:</span>
-              <span className="font-medium">{trade.flashLoan ? Number(trade.flashLoan.amount) : 0} ETH</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-blue-700">Fee:</span>
-              <span className="font-medium">${trade.flashLoan ? Number(trade.flashLoan.fee) : 0}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-blue-700">Net Profit:</span>
-              <span className="font-medium text-green-600">${trade.flashLoan ? Number(trade.flashLoan.profit) : 0}</span>
-            </div>
-          </div>
-        </div>
-      )}
-      {trade.routingPath && (
-        <div className="mt-4">
-          <h4 className="font-medium mb-2">Routing Path</h4>
-          <div className="flex items-center flex-wrap gap-2">
-            {trade.routingPath?.map((step: string, index: number) => (
-              <React.Fragment key={index}>
-                <span className="px-2 py-1 bg-gray-100 rounded text-sm">{step}</span>
-                {trade.routingPath && index < trade.routingPath.length - 1 && (
-                  <ArrowRight className="h-4 w-4 text-gray-400" />
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      )}
-      {hasWarnings && (
-        <div className="mt-4 p-4 bg-yellow-50 rounded-lg">
-          <div className="flex items-start">
-            <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5 mr-2" />
-            <div>
-              <h4 className="font-medium text-yellow-800 mb-1">Warnings</h4>
-              <ul className="list-disc list-inside space-y-1">
-                {trade.warnings?.map((warning: string, index: number) => (
-                  <li key={index} className="text-sm text-yellow-700">{warning}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      )}
-      {trade.transaction && (
-        <div className="mt-4 text-sm">
-          <div className="flex items-center space-x-2">
-            <span className="text-gray-600">Transaction Hash:</span>
-            <code className="font-mono bg-gray-100 px-2 py-1 rounded">
-              {trade.transaction.hash}
-            </code>
-          </div>
-        </div>
-      )}
-    </div>
+    createElement("div", { className: "bg-white rounded-lg shadow-lg p-6 mb-4" },
+      createElement("div", { className: "flex items-center justify-between mb-4" },
+        createElement("h3", { className: "text-lg font-semibold" }, "Trade #", trade.id.slice(0, 8)),
+        createElement("div", { className: "flex items-center" },
+          isSuccess ?
+            createElement(CheckCircle, { className: "text-green-500 h-5 w-5 mr-2" }) :
+            createElement(XCircle, { className: "text-red-500 h-5 w-5 mr-2" }),
+          createElement("span", { className: `font-medium ${isSuccess ? "text-green-600" : "text-red-600"}` }, trade.status)
+        )
+      ),
+      createElement("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-4" },
+        createElement("div", { className: "space-y-2" },
+          createElement("div", { className: "flex justify-between" },
+            createElement("span", { className: "text-gray-600" }, "Type:"),
+            createElement("span", { className: "font-medium" }, trade.type, " on ", trade.platform)
+          ),
+          createElement("div", { className: "flex justify-between" },
+            createElement("span", { className: "text-gray-600" }, "Amount:"),
+            createElement("span", { className: "font-medium" }, Number(trade.amount), " ETH")
+          ),
+          createElement("div", { className: "flex justify-between" },
+            createElement("span", { className: "text-gray-600" }, "Price:"),
+            createElement("span", { className: "font-medium" }, "$", Number(trade.price).toFixed(4))
+          ),
+          createElement("div", { className: "flex justify-between" },
+            createElement("span", { className: "text-gray-600" }, "Effective Price:"),
+            createElement("span", { className: "font-medium" }, "$", Number(trade.effectivePrice).toFixed(2))
+          ),
+          createElement("div", { className: "flex justify-between" },
+            createElement("span", { className: "text-gray-600" }, "Profit/Loss:"),
+            createElement("span", { className: `font-medium ${Number(trade.profitLoss) >= 0 ? "text-green-600" : "text-red-600"}` },
+              "$", Math.abs(Number(trade.profitLoss)).toFixed(2), " ", Number(trade.profitLoss) >= 0 ? "(Profit)" : "(Loss)")
+          )
+        ),
+        createElement("div", { className: "space-y-2" },
+          createElement("div", { className: "flex justify-between" },
+            createElement("span", { className: "text-gray-600" }, "Gas Cost:"),
+            createElement("span", { className: "font-medium" }, "$", trade.gasCost ? Number(trade.gasCost).toFixed(4) : "0.00")
+          ),
+          createElement("div", { className: "flex justify-between" },
+            createElement("span", { className: "text-gray-600" }, "Slippage:"),
+            createElement("span", { className: "font-medium" }, ((Number(trade.slippage) || 0) * 100).toFixed(2), "%")
+          ),
+          createElement("div", { className: "flex justify-between" },
+            createElement("span", { className: "text-gray-600" }, "Price Impact:"),
+            createElement("span", { className: "font-medium" }, (Number(trade.priceImpact) * 100).toFixed(2), "%")
+          ),
+          createElement("div", { className: "flex justify-between" },
+            createElement("span", { className: "text-gray-600" }, "Execution Time:"),
+            createElement("span", { className: "font-medium" }, trade.executionTime, "ms")
+          ),
+          trade.blockNumber &&
+            createElement("div", { className: "flex justify-between" },
+              createElement("span", { className: "text-gray-600" }, "Block Number:"),
+              createElement("span", { className: "font-medium" }, "#", trade.blockNumber)
+            )
+        )
+      ),
+      trade.flashLoan &&
+        createElement("div", { className: "mt-4 p-4 bg-blue-50 rounded-lg" },
+          createElement("h4", { className: "font-medium text-blue-800 mb-2" }, "Flash Loan Details"),
+          createElement("div", { className: "grid grid-cols-2 gap-4" },
+            createElement("div", { className: "flex justify-between" },
+              createElement("span", { className: "text-blue-700" }, "Protocol:"),
+              createElement("span", { className: "font-medium" }, trade.flashLoan?.protocol)
+            ),
+            createElement("div", { className: "flex justify-between" },
+              createElement("span", { className: "text-blue-700" }, "Amount:"),
+              createElement("span", { className: "font-medium" }, trade.flashLoan ? Number(trade.flashLoan.amount) : 0, " ETH")
+            ),
+            createElement("div", { className: "flex justify-between" },
+              createElement("span", { className: "text-blue-700" }, "Fee:"),
+              createElement("span", { className: "font-medium" }, "$", trade.flashLoan ? Number(trade.flashLoan.fee) : 0)
+            ),
+            createElement("div", { className: "flex justify-between" },
+              createElement("span", { className: "text-blue-700" }, "Net Profit:"),
+              createElement("span", { className: "font-medium text-green-600" }, "$", trade.flashLoan ? Number(trade.flashLoan.profit) : 0)
+            )
+          )
+        ),
+      trade.routingPath &&
+        createElement("div", { className: "mt-4" },
+          createElement("h4", { className: "font-medium mb-2" }, "Routing Path"),
+          createElement("div", { className: "flex items-center flex-wrap gap-2" },
+            trade.routingPath?.map((step, index) => (
+              React.createElement(React.Fragment, { key: index },
+                createElement("span", { className: "px-2 py-1 bg-gray-100 rounded text-sm" }, step),
+                trade.routingPath && index < trade.routingPath.length - 1 &&
+                  createElement(ArrowRight, { className: "h-4 w-4 text-gray-400" })
+              )
+            ))
+          )
+        ),
+      hasWarnings &&
+        createElement("div", { className: "mt-4 p-4 bg-yellow-50 rounded-lg" },
+          createElement("div", { className: "flex items-start" },
+            createElement(AlertTriangle, { className: "h-5 w-5 text-yellow-500 mt-0.5 mr-2" }),
+            createElement("div", null,
+              createElement("h4", { className: "font-medium text-yellow-800 mb-1" }, "Warnings"),
+              createElement("ul", { className: "list-disc list-inside space-y-1" },
+                trade.warnings?.map((warning, index) => (
+                  createElement("li", { key: index, className: "text-sm text-yellow-700" }, warning)
+                ))
+              )
+            )
+          )
+        ),
+      trade.transaction &&
+        createElement("div", { className: "mt-4 text-sm" },
+          createElement("div", { className: "flex items-center space-x-2" },
+            createElement("span", { className: "text-gray-600" }, "Transaction Hash:"),
+            createElement("code", { className: "font-mono bg-gray-100 px-2 py-1 rounded" },
+              trade.transaction.hash
+            )
+          )
+        )
+    )
   );
 };
 

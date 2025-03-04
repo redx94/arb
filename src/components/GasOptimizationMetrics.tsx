@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Gauge, TrendingDown, Zap, DollarSign } from 'lucide-react';
-import {} from '../utils/gas/GasOptimizer';
+import {} from '../utils/gas/GasOptimizer.js';
 
 interface Metrics {
   savedGas: string;

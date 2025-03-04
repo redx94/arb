@@ -1,6 +1,6 @@
 import React from 'react';
 import { BarChart3, TrendingUp, Clock, DollarSign } from 'lucide-react';
-import type { Trade } from '../../types';
+import type { Trade } from '../../types/index.js';
 
 interface Props {
   trades: Trade[];

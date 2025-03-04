@@ -1,6 +1,6 @@
 import React from 'react';
 import { Activity, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
-import { useArbitrageEngine } from '../../hooks/useArbitrageEngine';
+import { useArbitrageEngine } from '../../hooks/useArbitrageEngine.js';
 
 export const SystemStatus: React.FC = () => {
   const { status, latency, errors, warnings } = useArbitrageEngine();

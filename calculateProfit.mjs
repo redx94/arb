@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
-const { ProfitCalculator } = await import('./dist/src/utils/arbitrage/profitCalculator.js');
-const { PriceFeed } = await import('./dist/src/utils/priceFeeds.js');
+import { ProfitCalculator } from './dist/src/utils/arbitrage/profitCalculator';
+import { PriceFeed } from './dist/src/utils/priceFeeds';
 
 async function main() {
   const profitCalculator = ProfitCalculator.getInstance();
@@ -25,7 +25,7 @@ async function main() {
   console.log('Net Profit (USD):', netProfitUSD);
 }
 
-const { FlashLoanHandler } = await import('./dist/src/utils/flashLoanHandler.js');
+import { FlashLoanHandler } from './dist/src/utils/flashLoanHandler.js';
 
 async function testFlashLoan() {
   const flashLoanHandler = FlashLoanHandler.getInstance();

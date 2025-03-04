@@ -1,0 +1,5 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+export const LineChart = ({ data }) => {
+    return (_jsxs("div", { className: "bg-white p-6 rounded-lg shadow-lg", children: [_jsx("h2", { className: "text-xl font-semibold mb-4", children: "Price Comparison Chart" }), _jsx("div", { className: "h-[400px]", children: _jsx(ResponsiveContainer, { width: "100%", height: "100%", children: _jsxs(RechartsLineChart, { data: data, children: [_jsx(CartesianGrid, { strokeDasharray: "3 3" }), _jsx(XAxis, { dataKey: "timestamp", tickFormatter: (timestamp) => new Date(timestamp).toLocaleTimeString() }), _jsx(YAxis, {}), _jsx(Tooltip, { labelFormatter: (timestamp) => new Date(timestamp).toLocaleTimeString(), formatter: (value) => [`$${value.toFixed(2)}`, ''] }), _jsx(Legend, {}), _jsx(Line, { type: "monotone", dataKey: "dex", stroke: "#8884d8", name: "DEX Price", dot: false }), _jsx(Line, { type: "monotone", dataKey: "cex", stroke: "#82ca9d", name: "CEX Price", dot: false })] }) }) })] }));
+};

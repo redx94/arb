@@ -1,9 +1,9 @@
 import React, { FC, useEffect, useState } from "react";
-import { GlobalErrorBoundary } from "./utils/errorBoundary";
-import { ArbitrageEngine } from "./utils/arbitrage/arbitrageEngine";
-import { Logger } from "./utils/monitoring";
-import Dashboard from "./components/dashboard/Dashboard";
-import { PriceFeed } from "./utils/priceFeeds";
+import { GlobalErrorBoundary } from "./utils/errorBoundary.js";
+import { ArbitrageEngine } from "./utils/arbitrage/arbitrageEngine.js";
+import { Logger } from "./utils/monitoring.js";
+import Dashboard from "./components/dashboard/Dashboard.js";
+import { PriceFeed } from "./utils/priceFeeds.js";
 import type { PriceData } from "./types";
 
 const App: FC = () => {

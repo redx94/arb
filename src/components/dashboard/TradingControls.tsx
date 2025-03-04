@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Play, Pause, Settings, RefreshCw } from 'lucide-react';
-import { useArbitrageEngine } from '../../hooks/useArbitrageEngine';
+import { useArbitrageEngine } from '../../hooks/useArbitrageEngine.js';
 
 export const TradingControls: React.FC = () => {
   const { start, stop, isRunning, resetSystem, updateSettings } = useArbitrageEngine();

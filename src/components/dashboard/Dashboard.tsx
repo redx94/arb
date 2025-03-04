@@ -1,9 +1,9 @@
 import React, { useState, useEffect, Dispatch, SetStateAction } from 'react';
-import { ArbitrageVisualizer } from '../ArbitrageVisualizer';
-import { ArbitrageOpportunities } from './ArbitrageOpportunities';
-import { TradeHistory } from './TradeHistory';
-import { PriceData, TradeDetails } from '../../types';
-import { ArbitrageEngine } from '../../utils/arbitrage/arbitrageEngine';
+import { ArbitrageVisualizer } from '../ArbitrageVisualizer.js';
+import { ArbitrageOpportunities } from './ArbitrageOpportunities.js';
+import { TradeHistory } from './TradeHistory.js';
+import { PriceData, TradeDetails } from '../../types/index.js';
+import { ArbitrageEngine } from '../../utils/arbitrage/arbitrageEngine.js';
 
 interface DashboardProps {
   useMockData: boolean;

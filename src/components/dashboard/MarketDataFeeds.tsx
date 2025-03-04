@@ -1,9 +1,9 @@
 import React from 'react';
 import { Activity, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
-import { useTradeStore } from '../../utils/store';
-import { PriceFeed } from '../../utils/priceFeeds';
-import { PriceData } from '../../types';
-import { Logger } from '../../utils/monitoring';
+import { useTradeStore } from '../../utils/store.js';
+import { PriceFeed } from '../../utils/priceFeeds.js';
+import { PriceData } from '../../types/index.js';
+import { Logger } from '../../utils/monitoring.js';
 
 const logger = Logger.getInstance();
 

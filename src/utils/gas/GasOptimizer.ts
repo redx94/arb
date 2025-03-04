@@ -1,7 +1,7 @@
 import { ethers } from 'ethers';
-import { Logger } from '../monitoring';
-import { CacheManager } from '../cache/cacheManager';
-import { configManager } from '../config';
+import { Logger } from '../monitoring.js';
+import { CacheManager } from '../cache/cacheManager.js';
+import { configManager } from '../config/index.js';
 
 interface GasHistory {
   timestamp: number;

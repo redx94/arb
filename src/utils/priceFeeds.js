@@ -103,12 +103,6 @@ var PriceFeed = /** @class */ (function (_super) {
     PriceFeed.prototype.getMockData = function () {
         return this.mockData;
     };
-    PriceFeed.prototype.unsubscribe = function (callback) {
-        this.subscribers = Object.fromEntries(Object.entries(this.subscribers).filter(function (_a) {
-            var func = _a[1];
-            return func !== callback;
-        }));
-    };
     PriceFeed.prototype.getApiUrl = function (endpoint, params) {
         var url = "".concat(this.apiBaseUrl).concat(endpoint);
         var allParams = __assign({}, params);
@@ -118,9 +112,7 @@ var PriceFeed = /** @class */ (function (_super) {
         var queryParams = new URLSearchParams(allParams).toString();
         return queryParams ? "".concat(url, "?").concat(queryParams) : url;
     };
-    // Consider adding methods to handle API key updates if needed, e.g., for dynamic API key management.
-    // For now, API key is expected to be set as an environment variable.
-    PriceFeed.prototype.getCurrentPrice = function () {
+    PriceFeed.prototype.getCurrentPrice = function (platform) {
         return __awaiter(this, void 0, void 0, function () {
             var apiUrl, response, errorMessage, data, price, error_1;
             return __generator(this, function (_a) {
@@ -128,7 +120,7 @@ var PriceFeed = /** @class */ (function (_super) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
                         apiUrl = this.getApiUrl('/simple/price', { ids: 'ethereum', vs_currencies: 'usd' });
-                        console.log('Fetching price from CoinGecko API:', apiUrl);
+                        console.log("Fetching price from CoinGecko API for ".concat(platform, ":"), apiUrl);
                         return [4 /*yield*/, axios_1.default.get(apiUrl, {
                             // Future: Authentication headers can be added here if needed.
                             })];
@@ -137,7 +129,7 @@ var PriceFeed = /** @class */ (function (_super) {
                         console.log('CoinGecko API response:', response.data);
                         if (!response.data || !response.data.ethereum || !response.data.ethereum.usd) {
                             errorMessage = 'Invalid response format from CoinGecko API';
-                            console.error(errorMessage, 'Response data:', response.data); // Include response data in error log
+                            console.error(errorMessage, 'Response data:', response.data);
                             this.emit('error', errorMessage, response.data);
                             return [2 /*return*/, null];
                         }
@@ -146,15 +138,49 @@ var PriceFeed = /** @class */ (function (_super) {
                         return [2 /*return*/, {
                                 token: 'ETH',
                                 price: price,
-                                dex: price,
-                                cex: price,
+                                dex: platform === 'dex' ? price : 0, // Assign price based on platform
+                                cex: platform === 'cex' ? price : 0, // Assign price based on platform
                                 timestamp: Date.now(),
+                                platform: platform, // Set the platform
                                 amount: 1,
                             }];
                     case 2:
                         error_1 = _a.sent();
-                        console.error('Failed to fetch price from CoinGecko API:', error_1);
-                        this.emit('error', 'Failed to fetch price from CoinGecko API', error_1);
+                        console.error("Failed to fetch price from CoinGecko API for ".concat(platform, ":"), error_1);
+                        this.emit('error', "Failed to fetch price from CoinGecko API for ".concat(platform), error_1);
+                        return [2 /*return*/, null];
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    PriceFeed.prototype.getHistoricalPrice = function () {
+        return __awaiter(this, arguments, void 0, function (days) {
+            var apiUrl, response, errorMessage, error_2;
+            if (days === void 0) { days = 30; }
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        apiUrl = this.getApiUrl("/coins/ethereum/market_chart", { vs_currency: 'usd', days: days.toString() });
+                        console.log('Fetching historical price from CoinGecko API:', apiUrl);
+                        return [4 /*yield*/, axios_1.default.get(apiUrl, {
+                            // Future: Authentication headers can be added here if needed.
+                            })];
+                    case 1:
+                        response = _a.sent();
+                        console.log('CoinGecko API response:', response.data);
+                        if (!response.data || !response.data.prices) {
+                            errorMessage = 'Invalid response format from CoinGecko API for historical data';
+                            console.error(errorMessage, 'Response data:', response.data); // Include response data in error log
+                            this.emit('error', errorMessage, response.data);
+                            return [2 /*return*/, null];
+                        }
+                        return [2 /*return*/, response.data.prices];
+                    case 2:
+                        error_2 = _a.sent();
+                        console.error('Failed to fetch historical price from CoinGecko API:', error_2);
+                        this.emit('error', 'Failed to fetch historical price from CoinGecko API', error_2);
                         return [2 /*return*/, null];
                     case 3: return [2 /*return*/];
                 }

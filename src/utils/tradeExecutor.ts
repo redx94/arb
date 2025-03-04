@@ -30,7 +30,12 @@ class TradeExecutor {
 
       // Validate trade using RiskManager
       const riskManager = RiskManager.getInstance();
-      riskManager.validateTrade({ dex: Number(price), cex: Number(price), amount: Number(amountNumber) }); // Replace with actual dex and cex prices
+      const priceFeed = PriceFeed.getInstance();
+      const priceData = await priceFeed.getCurrentPrice();
+      if (!priceData) {
+        throw new Error('Failed to fetch current price');
+      }
+      riskManager.validateTrade({ dex: priceData.dex, cex: priceData.cex, amount: Number(amountNumber) });
 
       const gasAwareFlashLoanProvider = new GasAwareFlashLoanProvider();
       // Dynamically determine flash loan parameters based on trade details
@@ -44,14 +49,26 @@ class TradeExecutor {
       };
 
       let flashLoanUsed = false;
-      try {
-        // Execute flash loan
-        await gasAwareFlashLoanProvider.executeFlashLoan(flashLoanParams);
-        flashLoanUsed = true;
-      } catch (flashLoanError: any) {
-        this.logger.warn(`Flash loan failed: ${flashLoanError.message}`);
-        // Handle the case where flash loan fails
-        // You might want to execute the trade without a flash loan in this case
+      const maxRetries = 3;
+      let retryCount = 0;
+
+      while (retryCount < maxRetries) {
+        try {
+          // Execute flash loan
+          await gasAwareFlashLoanProvider.executeFlashLoan(flashLoanParams);
+          flashLoanUsed = true;
+          break; // If flash loan succeeds, break out of the retry loop
+        } catch (flashLoanError: any) {
+          this.logger.warn(`Flash loan failed (attempt ${retryCount + 1}): ${flashLoanError.message}`);
+          retryCount++;
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+        }
+      }
+
+      if (!flashLoanUsed) {
+        this.logger.error('Flash loan failed after multiple retries. Consider executing the trade without a flash loan.');
+        // Implement logic to execute the trade without a flash loan if possible
+        // This might involve using your own funds or adjusting the trade parameters
       }
 
       const tradeDetails: TradeDetails = {

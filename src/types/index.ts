@@ -4,6 +4,7 @@ export type PriceData = {
   dex: number;
   cex: number;
   timestamp: number;
+  platform: string; // Added platform
   amount?: number; // Optional amount
 };
 

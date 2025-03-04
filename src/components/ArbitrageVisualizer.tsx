@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { LineChart } from './LineChart';
-import { PriceDisplay } from './PriceDisplay';
-import { ScenarioLoader } from './ScenarioLoader';
-import { MevRiskMatrix } from './MevRiskMatrix';
-import { ArbitrageWalkthrough } from './ArbitrageWalkthrough';
-import { TradeExecutor } from './TradeExecutor';
-import { PriceData, SimulationScenario } from '../types';
+import { LineChart } from './LineChart.js';
+import { PriceDisplay } from './PriceDisplay.js';
+import { ScenarioLoader } from './ScenarioLoader.js';
+import { MevRiskMatrix } from './MevRiskMatrix.js';
+import { ArbitrageWalkthrough } from './ArbitrageWalkthrough.js';
+import { TradeExecutor } from './TradeExecutor.js';
+import { PriceData, SimulationScenario } from '../types/index.js';
 
 interface ArbitrageVisualizerProps {
   useMockData: boolean;

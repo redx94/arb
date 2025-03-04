@@ -1,13 +1,16 @@
-import { useState, useEffect } from 'react';
-import { ArbitrageEngine } from '../utils/arbitrage/arbitrageEngine';
-import { Logger } from '../utils/monitoring';
-const logger = Logger.getInstance();
-export const useArbitrageEngine = () => {
-    const [status, setStatus] = useState('stopped');
-    const [latency, setLatency] = useState(0);
-    const [errors, setErrors] = useState([]);
-    const [warnings, setWarnings] = useState([]);
-    const engine = ArbitrageEngine.getInstance();
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.useArbitrageEngine = void 0;
+const react_1 = require("react");
+const arbitrageEngine_1 = require("../utils/arbitrage/arbitrageEngine");
+const monitoring_1 = require("../utils/monitoring");
+const logger = monitoring_1.Logger.getInstance();
+const useArbitrageEngine = () => {
+    const [status, setStatus] = (0, react_1.useState)('stopped');
+    const [latency, setLatency] = (0, react_1.useState)(0);
+    const [errors, setErrors] = (0, react_1.useState)([]);
+    const [warnings, setWarnings] = (0, react_1.useState)([]);
+    const engine = arbitrageEngine_1.ArbitrageEngine.getInstance();
     // Define event handlers for consistency and cleanup.
     const handleStarted = () => setStatus('running');
     const handleStopped = () => setStatus('stopped');
@@ -20,7 +23,7 @@ export const useArbitrageEngine = () => {
         setWarnings((prev) => [...prev.slice(-4), warning]);
     };
     const handleLatencyUpdate = (newLatency) => setLatency(newLatency);
-    useEffect(() => {
+    (0, react_1.useEffect)(() => {
         engine.on('started', handleStarted);
         engine.on('stopped', handleStopped);
         engine.on('error', handleError);
@@ -51,3 +54,4 @@ export const useArbitrageEngine = () => {
         updateSettings,
     };
 };
+exports.useArbitrageEngine = useArbitrageEngine;
