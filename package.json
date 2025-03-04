@@ -1,27 +1,31 @@
 {
-  "type": "module",
   "name": "arb",
+  "type": "module",
   "version": "1.0.0",
   "description": "Optimized arbitrage trading system with minimized gas costs.",
   "main": "scripts/deploy.js",
   "scripts": {
     "compile": "truffle compile",
     "migrate": "truffle migrate",
-    "test": "truffle test",
-    "dev": "vite"
+    "test": "vitest",
+    "dev": "vite",
+    "build": "vite build"
   },
   "author": "Reece Dixon",
   "license": "MIT",
   "dependencies": {
-    "@aave/protocol-js": "^2.2.0",
-    "@openzeppelin/contracts": "^4.8.0",
+    "@aave/core-v3": "^1.19.3",
+    "@aave/protocol-js": "^4.3.0",
+    "@openzeppelin/contracts": "^5.2.0",
     "@truffle/hdwallet-provider": "^2.0.10",
     "axios": "^1.8.1",
     "dotenv": "^16.0.0",
     "ethers": "^6.13.5",
+    "ganache": "^7.9.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "truffle": "^5.5.7",
+    "truffle": "^5.11.5",
+    "ts-node": "^10.9.2",
     "web3": "^4.16.0"
   },
   "devDependencies": {
@@ -29,6 +33,7 @@
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
+    "jest": "^29.7.0",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.477.0",
     "recharts": "^2.15.1",

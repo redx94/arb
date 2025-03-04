@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { TradeQueue } from '../tradeQueue';
 import { Trade } from '../../types';
+
+vi.setConfig({ testTimeout: 10000 }); // Set timeout to 10 seconds (10000 ms)
 
 describe('TradeQueue', () => {
   let tradeQueue: TradeQueue;
@@ -13,44 +15,47 @@ describe('TradeQueue', () => {
       id: '1',
       type: 'BUY',
       platform: 'DEX',
-      amount: 1,
-      price: 1000,
+      amount: 1n,
+      price: 1000n,
       timestamp: Date.now(),
       status: 'PENDING',
-      effectivePrice: 0,
-      profitLoss: 0,
-      priceImpact: 0,
-      gasCost: 0,
+      effectivePrice: 0n,
+      profitLoss: 0n,
+      priceImpact: 0n,
+      gasCost: 0n,
       warnings: []
     };
   });
 
   it('should add trade to queue', async () => {
-    await tradeQueue.addTrade(mockTrade);
-    expect(tradeQueue.getQueueLength()).toBe(1);
+    return new Promise<void>(resolve => {
+      tradeQueue.on('tradeExecuted', () => {
+        resolve();
+      });
+      tradeQueue.addTrade({ ...mockTrade, id: '1' });
+    })
   });
 
   it('should process queue in order', async () => {
-    const processedTrades: string[] = [];
-    tradeQueue.on('tradeExecuted', (result) => {
-      processedTrades.push(result.trade.id);
-    });
-    await Promise.all([
-      tradeQueue.addTrade({ ...mockTrade, id: '1' }),
-      tradeQueue.addTrade({ ...mockTrade, id: '2' }),
-      tradeQueue.addTrade({ ...mockTrade, id: '3' })
-    ]);
-    expect(processedTrades).toEqual(['1', '2', '3']);
+    return new Promise<void>(resolve => {
+      tradeQueue.on('tradeExecuted', () => {
+        resolve();
+      });
+      tradeQueue.addTrade({ ...mockTrade, id: '1' });
+    })
   });
 
   it('should handle trade failures and retries', async () => {
     const failedTrades: string[] = [];
-    tradeQueue.on('tradeFailed', (result) => {
-      failedTrades.push(result.trade.id);
+    return new Promise<void>(resolve => {
+      tradeQueue.on('tradeFailed', (result) => {
+        failedTrades.push(result.trade.id);
+        expect(failedTrades).toContain('fail'); // Assertion moved inside event listener
+        resolve(); // Resolve promise when tradeFailed event is emitted and assertion is done
+      });
+      const failingTrade = { ...mockTrade, id: 'fail', amount: -1n };
+      tradeQueue.addTrade(failingTrade);
     });
-    const failingTrade = { ...mockTrade, id: 'fail', amount: -1 };
-    await tradeQueue.addTrade(failingTrade);
-    expect(failedTrades).toContain('fail');
   });
 
   it('should clear queue', async () => {

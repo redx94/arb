@@ -1,5 +1,4 @@
 import { Logger } from '../monitoring';
-import { useAuth } from '../auth/authProvider';
 import { rateLimit } from './rateLimit';
 
 const logger = Logger.getInstance();
@@ -34,21 +33,17 @@ class ApiClient {
     method: string, 
     endpoint: string,
     data?: any,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
+    token?: string // Add optional token parameter
   ): Promise<any> {
     await this.rateLimiter.acquire();
     try {
-      const auth = useAuth.getState();
-      const token = auth.token || '';
-      if (!token) {
-        logger.warn('No auth token found. API calls may fail.');
-      }
       const url = `${this.config.baseURL}/api/${this.config.version}${endpoint}`;
       const response = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : '',
+          'Authorization': token ? `Bearer ${token}` : '', // Use the passed token
           ...headers
         },
         body: data ? JSON.stringify(data) : undefined
@@ -63,11 +58,11 @@ class ApiClient {
     }
   }
 
-  public get<T>(endpoint: string, _force: boolean): Promise<T> {
-    return this.queryApi('GET', endpoint);
+  public get<T>(endpoint: string, _force: boolean, token?: string): Promise<T> { // Add optional token parameter
+    return this.queryApi('GET', endpoint, undefined, undefined, token); // Pass token to queryApi
   }
-  public post<T>(endpoint: string, data: any, _force: boolean): Promise<T> {
-    return this.queryApi( 'POST', endpoint, data );
+  public post<T>(endpoint: string, data: any, _force: boolean, token?: string): Promise<T> { // Add optional token parameter
+    return this.queryApi( 'POST', endpoint, data, undefined, token ); // Pass token to queryApi
   }
 }
 

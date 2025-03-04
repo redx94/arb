@@ -1,0 +1,4 @@
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+export const ArbitrageOpportunities = ({ opportunities }) => {
+    return (_jsxs("div", { className: "bg-white rounded-lg shadow-lg p-6", children: [_jsx("h2", { className: "text-xl font-semibold mb-4", children: "Arbitrage Opportunities" }), opportunities.length === 0 ? (_jsx("p", { className: "text-gray-600", children: "No opportunities detected." })) : (_jsx("ul", { className: "space-y-2", children: opportunities.map((opp, index) => (_jsx("li", { className: "p-3 bg-gray-50 rounded", children: _jsxs("div", { className: "flex justify-between", children: [_jsxs("span", { children: ["DEX: ", opp.dex] }), _jsxs("span", { children: ["CEX: ", opp.cex] }), _jsxs("span", { children: ["Time: ", new Date(opp.timestamp).toLocaleTimeString()] })] }) }, index))) }))] }));
+};

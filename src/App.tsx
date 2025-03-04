@@ -1,14 +1,26 @@
-import { FC, useEffect, useState } from "react";
+import React, { FC, useEffect, useState } from "react";
 import { GlobalErrorBoundary } from "./utils/errorBoundary";
 import { ArbitrageEngine } from "./utils/arbitrage/arbitrageEngine";
-import { PriceFeed } from "./utils/priceFeeds";
 import { Logger } from "./utils/monitoring";
+import Dashboard from "./components/dashboard/Dashboard";
+import { PriceFeed } from "./utils/priceFeeds";
+import type { PriceData } from "./types";
 
 const App: FC = () => {
+  const [useMockData, setUseMockData] = useState(true);
+  const [priceHistory, setPriceHistory] = useState<PriceData[]>([
+    { token: 'ETH', price: 2000, dex: 1990, cex: 2010, timestamp: Date.now(), amount: 1 },
+    { token: 'ETH', price: 2010, dex: 2000, cex: 2020, timestamp: Date.now(), amount: 1 },
+    { token: 'ETH', price: 2020, dex: 2010, cex: 2030, timestamp: Date.now(), amount: 1 },
+  ]);
   const logger = Logger.getInstance();
 
   useEffect(() => {
     const arbitrageEngine = ArbitrageEngine.getInstance();
+    const priceFeed = PriceFeed.getInstance();
+    priceFeed.setMockMode(true);
+
+    priceHistory.forEach(data => priceFeed.updatePrice(data));
     arbitrageEngine.start();
 
     const handleArbitrageOpportunity = (data: any) => {
@@ -31,10 +43,7 @@ const App: FC = () => {
 
   return (
     <GlobalErrorBoundary>
-      <div>
-        <h1>Arbitrage Trading System</h1>
-        <p>Data and information will be displayed in the console/terminal.</p>
-      </div>
+      <Dashboard useMockData={useMockData} setUseMockData={setUseMockData} priceHistory={priceHistory} />
     </GlobalErrorBoundary>
   );
 };

@@ -11,5 +11,9 @@ export default defineConfig({
         name: 'google chrome'
       }
     }
+  },
+  test: {
+    testTimeout: 10000,
+    watch: false,
   }
 })

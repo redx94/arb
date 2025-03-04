@@ -5,6 +5,7 @@ export class TradeQueue {
   private static instance: TradeQueue;
   private queue: Trade[] = [];
   private processing: boolean = false;
+  private processQueueMutex: Promise<void> = Promise.resolve(); // Mutex lock
   private readonly eventEmitter = new EventEmitter();
   private readonly MAX_RETRIES = 3;
   private readonly RETRY_DELAY = 1000;
@@ -23,7 +24,7 @@ export class TradeQueue {
     this.eventEmitter.emit('tradeAdded', trade);
     
     if (!this.processing) {
-      await this.processQueue();
+      this.processQueueMutex = this.processQueueMutex.then(() => this.processQueue());
     }
   }
 
@@ -31,10 +32,23 @@ export class TradeQueue {
     if (this.processing || this.queue.length === 0) return;
 
     this.processing = true;
+    return new Promise<void>(resolve => { // Return a Promise
+      this.processQueueInner().then(resolve).finally(() => {
+        this.processing = false;
+      });
+    });
+  }
+
+  private async processQueueInner(): Promise<void> {
     
     try {
-      while (this.queue.length > 0) {
+      console.log('processQueueInner started. Queue length:', this.queue.length); // ADDED LOGGING
+      console.log('Current queue:', this.queue.map(trade => trade.id)); // ADDED LOGGING
++     console.log('Before while loop in processQueueInner. Queue length:', this.queue.length); // ADDED LOGGING
+      while (this.queue.length > 0) { // Loop while queue has elements
         const trade = this.queue[0];
+        console.log('Processing trade:', trade.id, 'Queue length before executeTrade:', this.queue.length); // ADDED LOGGING
++       console.log('Inside while loop, processing trade:', trade.id); // ADDED LOGGING
         let retries = 0;
         let success = false;
 
@@ -43,7 +57,9 @@ export class TradeQueue {
             const result = await this.executeTrade(trade);
             if (result.success) {
               success = true;
+              console.log('Before emitting tradeExecuted event'); // ADDED LOGGING
               this.eventEmitter.emit('tradeExecuted', result);
+              console.log('After emitting tradeExecuted event'); // ADDED LOGGING
             } else {
               retries++;
               if (retries < this.MAX_RETRIES) {
@@ -66,7 +82,11 @@ export class TradeQueue {
   }
 
   private async executeTrade(trade: Trade): Promise<TradeResult> {
-    // Implementation of actual trade execution
+    // Mock implementation for testing trade failures
+    if (trade.id === 'fail') {
+      throw new Error('Simulated trade execution failure for testing');
+    }
+    await new Promise(resolve => setTimeout(resolve, 100)); // Simulate trade execution delay
     return {
       success: true,
       message: 'Trade executed successfully',

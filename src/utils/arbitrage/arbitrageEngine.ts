@@ -51,13 +51,14 @@ export class ArbitrageEngine extends EventEmitter {
         console.log(`Arbitrage opportunity detected: dex=${data.dex}, cex=${data.cex}, diff=${diff}`);
         this.logger.info(`Arbitrage opportunity detected: dex=${data.dex}, cex=${data.cex}`);
         this.emit('arbitrageOpportunity', data);
-        const amount = '1'; // Example amount
-        // Optionally, check risk management
-        const dataWithAmount: PriceDataWithAmount = { ...data, amount: parseFloat(amount) };
-        RiskManager.getInstance().validateTrade(dataWithAmount);
+        const tradeAmount = data.amount !== undefined ? String(data.amount) : '1'; // Use amount from PriceData or default to '1'
+        // Check risk management
+        const dataWithAmount: PriceDataWithAmount = { ...data, amount: parseFloat(tradeAmount) };
+        await RiskManager.getInstance().validateTrade(dataWithAmount);
 
         // Execute trade
-        const tradeResult = await tradeExecutor.executeTrade('BUY', 'ExamplePlatform', amount, data.dex);
+        const dexPriceBigInt = BigInt(Math.round(data.dex));
+        const tradeResult = await tradeExecutor.executeTrade('BUY', 'ExamplePlatform', tradeAmount, dexPriceBigInt);
 
         if (tradeResult.success) {
           this.logger.info(`Trade executed successfully: id=${tradeResult.trade?.id}`);
@@ -70,7 +71,6 @@ export class ArbitrageEngine extends EventEmitter {
     } catch (error: any) {
       this.logger.error('Error in handlePrice:', error instanceof Error ? error : new Error(String(error)));
       this.emit('error', error);
-      this.emit('warning', (error as Error).message);
     }
   };
 }

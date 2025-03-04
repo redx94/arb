@@ -9,10 +9,9 @@ interface DashboardProps {
   useMockData: boolean;
   setUseMockData: (useMockData: boolean) => void;
   priceHistory: PriceData[];
-  setPriceHistory: Dispatch<SetStateAction<PriceData[]>>;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ useMockData, setUseMockData, priceHistory, setPriceHistory }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ useMockData, setUseMockData, priceHistory }) => {
   const [tradeHistory, setTradeHistory] = useState<TradeDetails[]>([]);
   const [arbitrageOpportunities, setArbitrageOpportunities] = useState<PriceData[]>([]);
 
@@ -46,3 +45,5 @@ export const Dashboard: React.FC<DashboardProps> = ({ useMockData, setUseMockDat
     </div>
   );
 };
+
+export default Dashboard;

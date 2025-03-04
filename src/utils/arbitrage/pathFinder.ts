@@ -111,7 +111,7 @@ export class PathFinder {
         fees: exchangeData.fees
       });
 
-      currentAmount = (currentAmount * exchangeData.price) * (1 - exchangeData.fees);
+      currentAmount = currentAmount * (priceData.cex / priceData.dex) * (1 - exchangeData.fees);
       totalFees += exchangeData.fees;
     }
 
@@ -133,8 +133,17 @@ export class PathFinder {
     priceData: PriceData
   ): Promise<{ price: number; liquidity: number; fees: number } | null> {
     // Mock implementation - replace with actual exchange data fetching
+    console.log('getExchangeData _toExchange:', _toExchange, 'priceData:', priceData); // ADDED LOGGING
+    let price;
+    if (_toExchange.startsWith('DEX')) {
+      price = priceData.dex;
+    } else if (_toExchange.startsWith('CEX')) {
+      price = priceData.cex;
+    } else {
+      price = priceData.price; // Default to priceData.price if exchange type is unknown
+    }
     return {
-      price: priceData.dex,
+      price,
       liquidity: Number(this.MIN_LIQUIDITY),
       fees: 0.001 // 0.1% fee
     };

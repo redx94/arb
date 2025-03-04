@@ -4,18 +4,19 @@ export type PriceData = {
   dex: number;
   cex: number;
   timestamp: number;
+  amount?: number; // Optional amount
 };
 
 export type Trade = {
   id: string;
   type: 'BUY' | 'SELL';
   platform: string;
-  amount: number;
-  price: number;
-  effectivePrice: number;
-  profitLoss: number;
-  priceImpact: number;
-  gasCost: number;
+  amount: bigint; // bigint
+  price: bigint;  // bigint
+  effectivePrice: bigint;
+  profitLoss: bigint;
+  priceImpact: bigint;
+  gasCost: bigint;
   timestamp: number;
   status: 'PENDING' | 'COMPLETED' | 'FAILED';
 warnings: string[];
@@ -24,8 +25,8 @@ warnings: string[];
 
 export type Balance = {
   asset: string;
-  dexAmount: number;
-  cexAmount: number;
+  dexAmount: bigint; // bigint
+  cexAmount: bigint; // bigint
   pending: number;
 }
 
@@ -48,11 +49,11 @@ export type SimulationScenario = {
 }
 
 export interface TradeDetails extends Trade {
-  executedPrice: number;
-  slippage: number;
+  executedPrice: bigint;
+  slippage: bigint;
   feeStructure: {
-    makerFee: number;
-    takerFee: number;
+    makerFee: bigint;
+    takerFee: bigint;
   };
   blockNumber?: number;
   flashLoan?: {
