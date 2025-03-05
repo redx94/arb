@@ -29,7 +29,8 @@ module.exports = {
           runs: 200
         },
         remappings: [
-          "@chainlink/contracts/=node_modules/@chainlink/contracts/"
+          "@chainlink/contracts/=node_modules/@chainlink/contracts/",
+          "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/"
         ]
       }
     }

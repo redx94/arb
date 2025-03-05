@@ -1,3 +1,5 @@
+import { Logger } from '../monitoring.js';
+
 export class CircuitBreaker {
   private incidentCount = 0;
   private lastIncident = 0;
@@ -24,7 +26,7 @@ export class CircuitBreaker {
   }
 
   private sendAlert(): void {
-    console.error('[CIRCUIT BREAKER] Safety threshold exceeded!');
-    // TODO: Integrate with monitoring system
+    const logger = Logger.getInstance();
+    logger.error('[CIRCUIT BREAKER] Safety threshold exceeded!');
   }
 }

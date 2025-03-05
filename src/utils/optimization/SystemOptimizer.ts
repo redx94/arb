@@ -1,6 +1,6 @@
-import { Logger } from '../monitoring';
-import { CacheManager } from '../cache/cacheManager';
-import type { SystemMetrics, OptimizationAction, ResourceAllocation } from './types';
+import { Logger } from '../monitoring.js';
+import { CacheManager } from '../cache/cacheManager.js';
+import type { SystemMetrics, OptimizationAction, ResourceAllocation } from './types.js';
 
 const logger = Logger.getInstance();
 
@@ -283,7 +283,8 @@ export class SystemOptimizer {
 
   private async getNetworkBandwidth(): Promise<number> {
     try {
-      // This is a placeholder - a more sophisticated method is needed
+      // TODO: Implement logic to fetch network bandwidth from a reliable source
+      this.logger.warn('Network bandwidth is currently a mock value. Implement the actual logic to fetch network bandwidth.');
       return 1000 + Math.random() * 1000;
     } catch (error) {
       logger.error('Failed to get network bandwidth:', error as Error);
@@ -375,7 +376,8 @@ export class SystemOptimizer {
   }
 
   private calculateOptimizationValue(anomaly: { type: string; severity: number; metric: keyof SystemMetrics }): number {
-    // This is a placeholder - implement actual logic for optimization value calculation
+    // TODO: Implement actual logic for optimization value calculation
+    logger.warn('Optimization value calculation is currently a mock value. Implement the actual logic.');
     let value = anomaly.severity * 10;
     if (anomaly.metric === 'cpu') {
       value = value * 0.8; // Reduce CPU usage more conservatively
@@ -385,7 +387,7 @@ export class SystemOptimizer {
 
   private async applyOptimizationAction(action: OptimizationAction): Promise<void> {
     logger.info(`Applying optimization action: ${JSON.stringify(action)}`);
-    // This is a placeholder - implement actual logic to apply optimization action
+    // TODO: Implement actual logic to apply optimization action
     // For example, adjust gas price or trade size
     if (action.target === 'cpu') {
       // Reduce CPU usage - e.g., by reducing the number of concurrent tasks

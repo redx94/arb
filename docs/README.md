@@ -51,7 +51,19 @@ npm run dev
 ### Environment Setup
 Required environment variables:
 ```env
-VITE_API_URL=https://api.example.com
-VITE_ETHEREUM_RPC_URL=https://mainnet.infura.io/v3/your-key
-VITE_WEBSOCKET_URL=wss://ws.example.com
+MNEMONIC=your_wallet_mnemonic_here
+# Mnemonic phrase for your Ethereum wallet (used for generating private keys)
+MNEMONIC=your_wallet_mnemonic_here
+
+# Private key for your Ethereum wallet (used for signing transactions)
+PRIVATE_KEY=your_private_key_here
+
+# URL for the Ethereum provider (e.g., Infura, Alchemy)
+PROVIDER_URL=https://mainnet.infura.io/v3/your_project_id
+
+# Infura project ID (required if using Infura as your provider)
+INFURA_PROJECT_ID=your_project_id_here
+
+# Ethereum network to use (e.g., mainnet, rinkeby, kovan)
+NETWORK=mainnet
 ```

@@ -87,7 +87,20 @@ export class PriceFeed extends EventEmitter {
     } catch (error: any) {
       console.error(`Failed to fetch price from CoinGecko API for ${platform}:`, error);
       this.emit('error', `Failed to fetch price from CoinGecko API for ${platform}`, error);
-      return null;
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        this.logger.error(`CoinGecko API error for ${platform}: ${error.response.status} ${error.response.statusText}`, error.response.data);
+        return null;
+      } else if (error.request) {
+        // The request was made but no response was received
+        this.logger.error(`No response received from CoinGecko API for ${platform}: ${error.message}`);
+        return null;
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        this.logger.error(`Error setting up CoinGecko API request for ${platform}: ${error.message}`);
+        return null;
+      }
     }
   }
 
@@ -108,14 +121,32 @@ export class PriceFeed extends EventEmitter {
       return response.data.prices;
     } catch (error: any) {
       console.error('Failed to fetch historical price from CoinGecko API:', error);
-      this.emit('error', 'Failed to fetch historical price from CoinGecko API', error);
-      return null;
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        this.logger.error(`CoinGecko API error for historical data: ${error.response.status} ${error.response.statusText}`, error.response.data);
+        return null;
+      } else if (error.request) {
+        // The request was made but no response was received
+        this.logger.error(`No response received from CoinGecko API for historical data: ${error.message}`);
+        return null;
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        this.logger.error(`Error setting up CoinGecko API request for historical data: ${error.message}`);
+        return null;
+      }
     }
   }
 
   public async getDexLiquidity(): Promise<number> {
-    // Mock liquidity value for now
-    return 1000000;
+    try {
+      // TODO: Implement logic to fetch DEX liquidity from a reliable source (e.g., Uniswap V2 pair contract)
+      this.logger.warn('DEX liquidity is currently a mock value. Implement the actual logic to fetch DEX liquidity.');
+      return 1000000; // Mock liquidity value for now
+    } catch (error: any) {
+      this.logger.error('Failed to fetch DEX liquidity:', error);
+      return 1000000; // Return a default value in case of error
+    }
   }
 }
 

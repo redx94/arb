@@ -1,3 +1,5 @@
+import { logEvent } from '../../src/utils/monitoring.ts';
+
 export class CircuitBreaker {
     constructor() {
         Object.defineProperty(this, "incidentCount", {
@@ -42,6 +44,6 @@ export class CircuitBreaker {
     }
     sendAlert() {
         console.error('[CIRCUIT BREAKER] Safety threshold exceeded!');
-        // TODO: Integrate with monitoring system
+        logEvent('Circuit Breaker Triggered', { incidentCount: this.incidentCount });
     }
 }

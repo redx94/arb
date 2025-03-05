@@ -73,3 +73,33 @@ npm run deploy:production
 # Stop trading activities
 curl -X POST https://api.arbitrage-system.com/v1/emergency/stop
 ```
+
+## Smart Contract Deployment
+
+### Prerequisites
+- Truffle or Hardhat installed
+- Ganache or other local Ethereum network running
+- Account with sufficient ETH for deployment
+
+### Deployment Steps
+1. Compile the contracts:
+    ```bash
+    truffle compile
+    ```
+2. Deploy the contracts to the network:
+    ```bash
+    truffle migrate --network <network-name>
+    ```
+3. Verify the contract on Etherscan (optional):
+    ```bash
+    truffle run verify ArbTrader --network <network-name>
+    ```
+
+### Configuration
+After deploying the contracts, update the contract addresses in the frontend application's configuration file (`src/utils/config/configManager.ts` or similar).
+```typescript
+const config = {
+  arbTraderAddress: "0x...",
+  // other configurations
+};
+```

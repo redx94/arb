@@ -4,7 +4,7 @@ import { PriceFeed } from '../priceFeeds.js';
 import { RiskManager } from '../riskManager.js';
 import { Logger } from '../monitoring.js';
 import { tradeExecutor } from '../tradeExecutor.js';
-import { FlashLoanProvider } from './flashLoanProvider.ts'; // Import FlashLoanProvider, using .ts extension
+import { FlashLoanProvider } from '../flashLoanProvider.js';
 
 interface PriceDataWithAmount extends PriceData {
   amount: number;
@@ -15,7 +15,7 @@ export class ArbitrageEngine extends EventEmitter {
   private running = false;
   private logger = Logger.getInstance();
   private unsubscribePriceFeed: (() => void) | null = null;
-  private flashLoanProvider = new FlashLoanProvider(); // Use FlashLoanProvider
+  private flashLoanProvider = new FlashLoanProvider();
 
   private constructor() {
     super();
@@ -33,16 +33,16 @@ export class ArbitrageEngine extends EventEmitter {
       this.logger.info('ArbitrageEngine already running.');
       return;
     }
-    this.logger.info('ArbitrageEngine starting...'); // Added log
-    this.logger.info('PROFIT_THRESHOLD: ' + String(process.env.PROFIT_THRESHOLD) + ', TRADE_AMOUNT: ' + String(process.env.TRADE_AMOUNT) + ', TOKENS: ' + String(process.env.TOKENS) + ', PROTOCOLS: ' + String(process.env.PROTOCOLS)); // Log env vars
+    this.logger.info('ArbitrageEngine starting...');
+    this.logger.info('PROFIT_THRESHOLD: ' + String(process.env.PROFIT_THRESHOLD) + ', TRADE_AMOUNT: ' + String(process.env.TRADE_AMOUNT) + ', TOKENS: ' + String(process.env.TOKENS) + ', PROTOCOLS: ' + String(process.env.PROTOCOLS));
     this.running = true;
     this.emit('started');
-    this.logger.info('ArbitrageEngine started.'); // Added log
+    this.logger.info('ArbitrageEngine started.');
     this.unsubscribePriceFeed = PriceFeed.getInstance().subscribe(this.handlePrice);
     if (this.unsubscribePriceFeed !== null) {
-      this.logger.info('Subscribed to PriceFeed.'); // Added log
+      this.logger.info('Subscribed to PriceFeed.');
     } else {
-      this.logger.error('Failed to subscribe to PriceFeed.'); // Added log
+      this.logger.error('Failed to subscribe to PriceFeed.');
     }
   }
 
@@ -60,18 +60,26 @@ export class ArbitrageEngine extends EventEmitter {
     return this.running;
   }
 
-  private handlePrice = async (data: PriceData) => {
-    console.log('handlePrice: start'); // Added console log
-    this.logger.info('Handling price update...'); // Added log
-    this.logger.info('Received price data: ' + JSON.stringify(data)); // Log price data
-    try {
-      const profitThreshold = parseFloat(process.env.PROFIT_THRESHOLD || '1'); // 1% threshold
+  public reset() {
+    this.stop();
+    if (this.unsubscribePriceFeed) {
+      this.unsubscribePriceFeed();
+      this.unsubscribePriceFeed = null;
+    }
+    this.flashLoanProvider = new FlashLoanProvider();
+  }
 
-      // Fetch platform-specific prices
+  private handlePrice = async (data: PriceData) => {
+    console.log('handlePrice: start');
+    this.logger.info('Handling price update...');
+    this.logger.info('Received price data: ' + JSON.stringify(data));
+    try {
+      const profitThreshold = parseFloat(process.env.PROFIT_THRESHOLD || '1');
+
       const dexPriceData = await PriceFeed.getInstance().getCurrentPrice('dex');
-      this.logger.info('DEX price data: ' + JSON.stringify(dexPriceData)); // Log DEX price data
+      this.logger.info('DEX price data: ' + JSON.stringify(dexPriceData));
       const cexPriceData = await PriceFeed.getInstance().getCurrentPrice('cex');
-      this.logger.info('CEX price data: ' + JSON.stringify(cexPriceData)); // Log CEX price data
+      this.logger.info('CEX price data: ' + JSON.stringify(cexPriceData));
 
       if (!dexPriceData || !cexPriceData) {
         this.logger.error('Failed to fetch dex or cex price data.');
@@ -85,12 +93,11 @@ export class ArbitrageEngine extends EventEmitter {
       if (diff >= profitThreshold) {
         console.log('Arbitrage opportunity detected: dex=' + String(dexPriceData.price) + ', cex=' + String(cexPriceData.price) + ', diff=' + String(diff));
         this.logger.info('Arbitrage opportunity detected: dex=' + String(dexPriceData.price) + ', cex=' + String(cexPriceData.price));
-        this.emit('arbitrageOpportunity', { dex: Number(dexPriceData.dex), cex: Number(cexPriceData.cex) }); // Emit price data
+        this.emit('arbitrageOpportunity', { dex: Number(dexPriceData.dex), cex: Number(cexPriceData.cex) });
         const defaultTradeAmount = process.env.TRADE_AMOUNT || '1';
-        const tradeAmount = data.amount !== undefined ? String(data.amount) : defaultTradeAmount; // Use amount from PriceData or default to defaultTradeAmount
-        // Check risk management
+        const tradeAmount = data.amount !== undefined ? String(data.amount) : defaultTradeAmount;
         const dataWithAmount: PriceDataWithAmount = { ...data, amount: parseFloat(tradeAmount) };
-        this.logger.info('Validating trade: dex=' + String(dexPriceData.dex) + ', cex=' + String(cexPriceData.cex) + ', amount=' + String(tradeAmount));
+        this.logger.info('Validating trade: dex=' + String(dexPriceData.dex) + ', cex=' + String(dexPriceData.cex) + ', amount=' + String(tradeAmount));
         try {
           await RiskManager.getInstance().validateTrade({ dex: Number(Number(dexPriceData.dex)), cex: Number(Number(cexPriceData.cex)), amount: parseFloat(tradeAmount) });
           this.logger.info('Trade validated successfully.');
@@ -99,43 +106,41 @@ export class ArbitrageEngine extends EventEmitter {
           return;
         }
 
-        // Determine trade direction
         const buyPlatform = dexPriceData.price < cexPriceData.price ? 'dex' : 'cex';
         const sellPlatform = dexPriceData.price < cexPriceData.price ? 'cex' : 'dex';
         const tradeType = dexPriceData.price < cexPriceData.price ? 'BUY' : 'SELL';
         const priceNumber = dexPriceData.price < cexPriceData.price ? dexPriceData.price : cexPriceData.price;
         const priceBigInt = BigInt(priceNumber);
 
-        const tokens = (process.env.TOKENS || 'ETH,BTC').split(','); // Replace with actual tokens
-        const protocols = (process.env.PROTOCOLS || 'AAVE').split(','); // Replace with actual protocols
+        const tokens = (process.env.TOKENS || 'ETH,BTC').split(',');
+        const protocols = (process.env.PROTOCOLS || 'AAVE').split(',');
 
         try {
           for (const token of tokens) {
             for (const protocol of protocols) {
-              // Flash loan parameters
               const flashLoanParams: FlashLoanParams = {
-                token: token, // Assuming the first token is the flash loan token
+                token: token,
                 amount: tradeAmount,
-                expectedProfit: String(diff), // Using the price difference as the expected profit
-                deadline: Date.now() + 60000, // 1 minute deadline
+                expectedProfit: String(diff),
+                deadline: Date.now() + 60000,
                 protocol: protocol as 'AAVE' | 'DYDX' | 'UNISWAP',
                 maxSlippage: 0,
               };
 
-              // Execute flash loan
               this.logger.info('Executing flash loan: token=' + token + ', amount=' + tradeAmount + ', protocol=' + protocol);
               let txHash;
               try {
-                txHash = await this.flashLoanProvider.executeFlashLoan(flashLoanParams); // Use FlashLoanProvider
+                txHash = await this.flashLoanProvider.executeFlashLoan(flashLoanParams);
                 this.logger.info('Flash loan executed successfully: txHash=' + String(txHash));
               } catch (flashLoanError: any) {
                 this.logger.error('Flash loan execution failed for token=' + token + ', protocol=' + protocol + ': ' + String(flashLoanError));
                 this.emit('error', flashLoanError);
-                continue; // Skip to the next token/protocol combination
+                continue;
               }
 
               this.logger.info('Executing trade: tradeType=' + tradeType + ', buyPlatform=' + buyPlatform + ', amount=' + tradeAmount + ', token=' + token + ', protocol=' + protocol);
               let tradeResult;
+              let tradeError: any;
               try {
                 tradeResult = await tradeExecutor.executeTrade(tradeType, buyPlatform, tradeAmount, priceBigInt, token, protocol as 'AAVE' | 'DYDX' | 'UNISWAP');
 
@@ -144,9 +149,10 @@ export class ArbitrageEngine extends EventEmitter {
                   this.emit('tradeExecuted', tradeResult.trade);
                 } else {
                   this.logger.error('Trade execution failed for token=' + token + ', protocol=' + protocol + ': ' + String(tradeResult.error));
-                  this.emit('error', tradeResult.error);
+                  this.emit('error', tradeError);
                 }
-              } catch (tradeError: any) {
+              } catch (e: any) {
+                tradeError = e;
                 this.logger.error('Trade execution failed for token=' + token + ', protocol=' + protocol + ': ' + String(tradeError));
                 this.emit('error', tradeError);
               }

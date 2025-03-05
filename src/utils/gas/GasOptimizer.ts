@@ -37,10 +37,13 @@ export class GasOptimizer {
     return GasOptimizer.instance;
   }
 
-  static async estimateGasCost(tx: ethers.Transaction): Promise<bigint> {
+  static async estimateGasCost(tx: ethers.Transaction): Promise<{ gasLimit: bigint, baseGas: bigint, priorityFee: bigint }> {
     const provider = configManager.getProvider();
     const estimatedGas = await provider.estimateGas(tx);
-    return estimatedGas;
+    const feeData = await provider.getFeeData();
+    const baseGas = feeData.gasPrice ? BigInt(feeData.gasPrice.toString()) : 0n;
+    const priorityFee = feeData.maxPriorityFeePerGas ? BigInt(feeData.maxPriorityFeePerGas.toString()) : 0n;
+    return { gasLimit: estimatedGas, baseGas, priorityFee };
   }
 
   private async startGasMonitoring() {

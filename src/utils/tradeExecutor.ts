@@ -1,11 +1,10 @@
-// @ts-nocheck
 import type { Balance, TradeDetails } from '../types/index.js';
 import { PriceFeed } from './priceFeeds.js';
 import { GasAwareFlashLoanProvider } from './gas/GasAwareFlashLoan.js';
 import { RiskManager } from './riskManager.js';
 import { Logger } from './monitoring.js';
 import { walletManager } from './wallet.js';
-import { ethers } from 'ethers';
+import { ethers, BigNumberish } from 'ethers';
 import { GasOptimizer } from './gas/GasOptimizer.js';
 
 class TradeExecutor {
@@ -15,8 +14,23 @@ class TradeExecutor {
   ];
   private walletManagerInstance = walletManager; // Instantiate WalletManager
 
-  public getBalances(): Balance[] {
-    return this.balances;
+  public async getBalances(): Promise<Balance[]> {
+    const walletAddress = process.env.WALLET_ADDRESS;
+    if (!walletAddress) {
+      this.logger.error('WALLET_ADDRESS environment variable not set.');
+      console.error('WALLET_ADDRESS environment variable not set.');
+      return this.balances; // Return default balances if wallet address is not set
+    }
+
+    try {
+      const ethBalance = await this.walletManagerInstance.getBalance(walletAddress);
+      this.balances = [{ asset: 'ETH', dexAmount: BigInt(ethBalance), cexAmount: BigInt(ethBalance), pending: 0n }];
+      return this.balances;
+    } catch (error: any) {
+      this.logger.error('Error getting wallet balance:', error);
+      console.error('Error getting wallet balance:', error);
+      return this.balances; // Return default balances in case of error
+    }
   }
 
   public async executeTrade(
@@ -56,9 +70,19 @@ class TradeExecutor {
         deadline: Date.now() + 60000, // 1 minute
       };
 
+      // Estimate gas cost
+      const tx = {
+        to: process.env.FLASH_LOAN_CONTRACT_ADDRESS, // Replace with actual contract address
+        data: '0x', // Replace with actual transaction data
+        gasPrice: 1000000000n, // placeholder
+      };
+      const { gasLimit, baseGas, priorityFee } = await GasOptimizer.estimateGasCost(tx as any);
+
       let flashLoanUsed = false;
       const maxRetries = 3;
       let retryCount = 0;
+
+      flashLoanParams.amount = (BigInt(flashLoanParams.amount) + baseGas * priorityFee * gasLimit).toString();
 
       while (retryCount < maxRetries) {
         try {
@@ -109,14 +133,17 @@ class TradeExecutor {
 
       return { success: true, trade: tradeDetails };
     } catch (error: any) {
+      const errorMessage = `Trade execution failed: ${error.message}, type=${type}, platform=${platform}, amount=${amount}, price=${price}, token=${token}, protocol=${protocol}`;
       this.logger.error('Trade execution failed:', error, {
         type,
         platform,
         amount,
         price,
+        token,
+        protocol,
       });
-      console.error(`Trade execution failed: ${error.message}, type=${type}, platform=${platform}, amount=${amount}, price=${price}`);
-      return { success: false, error: error.message };
+      console.error(errorMessage);
+      return { success: false, error: errorMessage };
     }
   }
 
@@ -160,7 +187,7 @@ class TradeExecutor {
         return;
       }
 
-      const value = ethers.ethers.parseEther(ethers.ethers.formatEther(profit)); // Use ethers.parseEther and formatEther
+      const value = ethers.parseEther(ethers.formatEther(profit)); // Use ethers.parseEther and formatEther
       const gasAllocationPercentage =
         parseFloat(process.env.GAS_ALLOCATION_PERCENTAGE || '0.05'); // Default: 5%
 
@@ -173,7 +200,7 @@ class TradeExecutor {
         const tx = await this.walletManagerInstance.signTransaction(
           walletAddress, // Use walletAddress from env variable
           walletAddress,
-          ethers.ethers.formatEther(profitAfterGasAllocation)
+          ethers.formatEther(profitAfterGasAllocation)
         );
         const txHash = await this.walletManagerInstance.sendTransaction(tx);
         this.logger.info(
@@ -183,10 +210,10 @@ class TradeExecutor {
           `Profit deposited to wallet ${walletAddress}, TX hash: ${txHash}`
         );
         this.logger.info(
-          `Allocated ${ethers.ethers.formatEther(gasAllocation)} ETH for future gas fees.`
+          `Allocated ${ethers.formatEther(gasAllocation)} ETH for future gas fees.`
         );
         console.log(
-          `Allocated ${ethers.ethers.formatEther(gasAllocation)} ETH for future gas fees.`
+          `Allocated ${ethers.formatEther(gasAllocation)} ETH for future gas fees.`
         );
       } catch (signError: any) {
         this.logger.error('Error signing/sending transaction:', signError);

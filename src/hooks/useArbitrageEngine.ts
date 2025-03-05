@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { ArbitrageEngine } from '../utils/arbitrage/arbitrageEngine';
-import { Logger } from '../utils/monitoring';
+import { ArbitrageEngine } from '../utils/arbitrage/arbitrageEngine.js';
+import { Logger } from '../utils/monitoring.js';
+import { FlashLoanProvider } from '../utils/flashLoanProvider.js';
 
 const logger = Logger.getInstance();
 
@@ -43,8 +44,24 @@ export const useArbitrageEngine = () => {
   const start = () => engine.start();
   const stop = () => engine.stop();
   const isRunning = engine.isRunning();
-  const resetSystem = () => { /* TODO: Implement resetSystem */ };
-  const updateSettings = (_settings: any) => { /* TODO: Implement updateSettings */ };
+  const resetSystem = () => {
+    engine.reset();
+  };
+  const updateSettings = (settings: any) => {
+    if (settings.PROFIT_THRESHOLD) {
+      process.env.PROFIT_THRESHOLD = settings.PROFIT_THRESHOLD;
+    }
+    if (settings.TRADE_AMOUNT) {
+      process.env.TRADE_AMOUNT = settings.TRADE_AMOUNT;
+    }
+    if (settings.TOKENS) {
+      process.env.TOKENS = settings.TOKENS;
+    }
+    if (settings.PROTOCOLS) {
+      process.env.PROTOCOLS = settings.PROTOCOLS;
+    }
+    engine.reset();
+  };
 
   return {
     status,

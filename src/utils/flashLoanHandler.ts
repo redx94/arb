@@ -16,6 +16,8 @@ export class FlashLoanHandler {
   private readonly MIN_PROFIT_THRESHOLD = process.env.MIN_PROFIT_THRESHOLD || '0.05';
   private readonly MAX_GAS_PRICE = process.env.MAX_GAS_PRICE || '500';
   private readonly FLASH_LOAN_CONTRACT_ADDRESS = process.env.FLASH_LOAN_CONTRACT_ADDRESS || '0x794a61358D6845594F94dc1DB027E1266356b045'; // AAVE V2 FlashLoan contract address (replace with actual address)
+  private deployedContractAddress: string | null = null;
+  private arbTraderContract: ethers.Contract | null = null;
 
   private constructor() {
   }
@@ -113,40 +115,42 @@ export class FlashLoanHandler {
       const relay = new GelatoRelay();
       const wallet = new ethers.Wallet(process.env.PRIVATE_KEY as string, provider); // Keep wallet for contract interaction
 
-      const factory = new ethers.ContractFactory(
-        ['function requestFlashLoan(address asset, uint256 amount) external'],
-        '0x',
-        wallet
-      );
-
       const poolAddressesProviderAddress = process.env.POOL_ADDRESSES_PROVIDER_ADDRESS; // Make sure this is set in .env
       if (!poolAddressesProviderAddress) {
         throw new Error("POOL_ADDRESSES_PROVIDER_ADDRESS is not set in .env");
       }
 
-      const zeroCapitalArbTrader = await factory.deploy(poolAddressesProviderAddress);
-      await zeroCapitalArbTrader.waitForDeployment();
-      const deployedContractAddress = await zeroCapitalArbTrader.getAddress();
+      if (!this.deployedContractAddress) {
+        const factory = new ethers.ContractFactory(
+          ['function requestFlashLoan(address asset, uint256 amount) external'],
+          '0x',
+          wallet
+        );
 
-      const arbTraderContract = new ethers.Contract(
-        deployedContractAddress,
-        [
-          'function executeOperation(address[] calldata assets, uint256[] calldata amounts, uint256[] calldata premiums, address initiator) external returns (bool)'
-        ],
-        provider // Use provider instead of wallet for contract read
-      );
+        const zeroCapitalArbTrader = await factory.deploy(poolAddressesProviderAddress);
+        await zeroCapitalArbTrader.waitForDeployment();
+        this.deployedContractAddress = await zeroCapitalArbTrader.getAddress();
+
+        this.arbTraderContract = new ethers.Contract(
+          this.deployedContractAddress,
+          [
+            'function executeOperation(address[] calldata assets, uint256[] calldata amounts, uint256[] calldata premiums, address initiator) external returns (bool)'
+          ],
+          provider // Use provider instead of wallet for contract read
+        );
+      }
 
       // Prepare transaction data for arbitrage execution
       const assets = [params.token];
       const amounts = [ethers.parseUnits(params.amount, 18)];
       const premiums = [ethers.parseUnits('0', 18)];
       const initiator = wallet.address;
-      const data = arbTraderContract.interface.encodeFunctionData('executeOperation', [assets, amounts, premiums, initiator]);
+      const data = this.arbTraderContract.interface.encodeFunctionData('executeOperation', [assets, amounts, premiums, initiator]);
 
 
       const relayResponse = await relay.relayWithSyncFee(
         {
-          target: deployedContractAddress, // Use deployed contract address
+          target: this.deployedContractAddress, // Use deployed contract address
           data: data,
           chainId: (await provider.getNetwork()).chainId, // Or chainId you are working on
         },

@@ -67,20 +67,9 @@ async calculateCosts(amount: bigint, price: bigint, _priceData?: any): Promise<{
 
     async getGasPrice(): Promise<any> {
         try {
-            const response = await fetch(process.env.PROVIDER_URL as string, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    jsonrpc: '2.0',
-                    method: 'eth_gasPrice',
-                    params: [],
-                    id: 1
-                })
-            });
-            const data = await response.json();
-            const gasPrice = parseInt(data.result, 16);
+            const provider = new ethers.JsonRpcProvider(process.env.PROVIDER_URL);
+            const feeData = await provider.getFeeData();
+            const gasPrice = feeData.gasPrice ? Number(feeData.gasPrice) : 10;
             if (isNaN(gasPrice)) {
                 logger.error('Invalid gas price received, using default gas price.');
                 return 10; // Default gas price

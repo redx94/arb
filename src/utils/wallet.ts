@@ -2,6 +2,7 @@ import { ethers } from 'ethers';
 import type { Wallet, Transaction } from '../types/index.js';
 
 import { Logger } from './monitoring.js';
+import { GasOptimizer } from './gas/GasOptimizer.js';
 
 class WalletManager {
   private wallets: Map<string, Wallet> = new Map();
@@ -129,14 +130,18 @@ class WalletManager {
 
       const nonce = await this.provider.getTransactionCount(from);
       const gasPrice = await this.provider.getFeeData();
-      
+      const estimatedGas = await GasOptimizer.estimateGasCost({
+        to: to,
+        data: data || '0x',
+      } as any);
+
       const tx: Transaction = {
         hash: '',
         from,
         to,
         value,
         gasPrice: gasPrice.gasPrice?.toString() || '20000000000',
-        gasLimit: '21000',
+        gasLimit: estimatedGas.gasLimit.toString(),
         nonce,
         data,
         chainId: wallet.chainId
@@ -144,12 +149,15 @@ class WalletManager {
 
       const signer = new ethers.Wallet(wallet.privateKey, this.provider);
       const signedTx = await signer.signTransaction(tx);
-      tx.hash = ethers.keccak256(tx);
+      tx.hash = ethers.keccak256(signedTx);
 
       return tx;
     } catch (error: any) {
       console.warn('Error signing transaction:', error instanceof Error ? error : new Error(String(error)));
-      throw new Error('Failed to sign transaction');
+      if (error.code === 'INSUFFICIENT_FUNDS') {
+        throw new Error('Insufficient funds to sign transaction');
+      }
+      throw new Error(`Failed to sign transaction: ${error.message}`);
     }
   }
 
@@ -174,7 +182,10 @@ class WalletManager {
       return response.hash;
     } catch (error: any) {
       console.warn('Error sending transaction:', error instanceof Error ? error : new Error(String(error)));
-      throw new Error('Failed to send transaction');
+      if (error.code === 'INSUFFICIENT_FUNDS') {
+        throw new Error('Insufficient funds to send transaction');
+      }
+      throw new Error(`Failed to send transaction: ${error.message}`);
     }
   }
 

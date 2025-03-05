@@ -1,4 +1,4 @@
-import * as ethers from 'ethers';
+import { ethers } from 'ethers';
 import { Logger } from './monitoring.js';
 import type { FlashLoanParams } from '../types/index.js';
 
@@ -18,7 +18,7 @@ export class FlashLoanProvider {
         throw new Error('Missing provider URL, ZeroCapitalArbTrader address, or private key');
       }
 
-      const provider = new ethers.providers.JsonRpcProvider(providerUrl);
+      const provider = new ethers.JsonRpcProvider(providerUrl);
       const wallet = new ethers.Wallet(privateKey, provider);
       const zeroCapitalArbTrader = new ethers.Contract(
         zeroCapitalArbTraderAddress,
@@ -28,7 +28,8 @@ export class FlashLoanProvider {
 
       const tx = await zeroCapitalArbTrader.requestFlashLoan(
         params.token,
-        ethers.utils.parseEther(params.amount)
+        ethers.parseEther(params.amount),
+        { gasLimit: 3000000 } // Add gas limit
       );
 
       await tx.wait();
@@ -37,7 +38,13 @@ export class FlashLoanProvider {
       return tx.hash;
     } catch (error: any) {
       logger.error('ZeroCapitalArbTrader flash loan execution failed: ' + error);
-      throw error;
+      if (error.code === 'INSUFFICIENT_FUNDS') {
+        throw new Error('Insufficient funds to execute flash loan');
+      } else if (error.code === 'NETWORK_ERROR') {
+        throw new Error('Network error occurred during flash loan execution');
+      } else {
+        throw new Error(`Flash loan execution failed: ${error.message}`);
+      }
     }
     return ''; // Explicit return to satisfy TypeScript
   }
