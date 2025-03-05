@@ -8,7 +8,6 @@
     ],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "allowImportingTsExtensions": false,
     "declaration": true,
     "resolveJsonModule": true,
     "isolatedModules": false,

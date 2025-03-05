@@ -134,10 +134,17 @@ export class GasOptimizer {
     return baseGas + (baseGas * BigInt(Math.ceil(gasStats.volatility * 100)) / 1000n);
   }
 
-  private calculatePriorityFee(gasStats: { median: number }, expectedProfit: bigint): bigint {
+  private calculatePriorityFee(gasStats: { median: number; percentile90: number; }, expectedProfit: bigint): bigint {
     let priorityFee = BigInt(Math.floor(gasStats.median / 10));
-    const profitBasedFee = expectedProfit * 5n / 1000n;
+    const profitBasedFee = expectedProfit * 5n / 1000n; // 0.5% of expected profit
     priorityFee += profitBasedFee;
+
+    // Adjust priority fee based on network conditions
+    if (gasStats.percentile90 > gasStats.median * 2) {
+      // Network is congested, increase priority fee
+      priorityFee += BigInt(Math.floor(gasStats.percentile90 / 20)); // Add 5% of percentile90
+    }
+
     return priorityFee > this.MAX_PRIORITY_FEE ? this.MAX_PRIORITY_FEE : priorityFee;
   }
 

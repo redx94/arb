@@ -7,13 +7,6 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: 'src/main.tsx',
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          charts: ['recharts'],
-          utils: ['ethers', 'zustand']
-        }
-      }
     },
     sourcemap: true,
     target: 'esnext'

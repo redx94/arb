@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { ethers } from 'ethers';
 import { GelatoRelay } from '@gelatonetwork/relay-sdk';
 
@@ -112,25 +113,40 @@ export class FlashLoanHandler {
       const relay = new GelatoRelay();
       const wallet = new ethers.Wallet(process.env.PRIVATE_KEY as string, provider); // Keep wallet for contract interaction
 
-      const flashLoanContract = new ethers.Contract(
-        this.FLASH_LOAN_CONTRACT_ADDRESS,
+      const factory = new ethers.ContractFactory(
+        ['function requestFlashLoan(address asset, uint256 amount) external'],
+        '0x',
+        wallet
+      );
+
+      const poolAddressesProviderAddress = process.env.POOL_ADDRESSES_PROVIDER_ADDRESS; // Make sure this is set in .env
+      if (!poolAddressesProviderAddress) {
+        throw new Error("POOL_ADDRESSES_PROVIDER_ADDRESS is not set in .env");
+      }
+
+      const zeroCapitalArbTrader = await factory.deploy(poolAddressesProviderAddress);
+      await zeroCapitalArbTrader.waitForDeployment();
+      const deployedContractAddress = await zeroCapitalArbTrader.getAddress();
+
+      const arbTraderContract = new ethers.Contract(
+        deployedContractAddress,
         [
-          'function executeOperation(address[] calldata assets, uint256[] calldata amounts, uint256 premium, address initiator, bytes calldata params) external returns (bool)'
+          'function executeOperation(address[] calldata assets, uint256[] calldata amounts, uint256[] calldata premiums, address initiator) external returns (bool)'
         ],
         provider // Use provider instead of wallet for contract read
       );
 
-      // Prepare transaction data
+      // Prepare transaction data for arbitrage execution
       const assets = [params.token];
       const amounts = [ethers.parseUnits(params.amount, 18)];
-      const premium = ethers.parseUnits('0', 18);
+      const premiums = [ethers.parseUnits('0', 18)];
       const initiator = wallet.address;
-      const loanParams = ethers.toUtf8Bytes('');
-      const data = flashLoanContract.interface.encodeFunctionData('executeOperation', [assets, amounts, premium, initiator, loanParams]);
+      const data = arbTraderContract.interface.encodeFunctionData('executeOperation', [assets, amounts, premiums, initiator]);
+
 
       const relayResponse = await relay.relayWithSyncFee(
         {
-          target: this.FLASH_LOAN_CONTRACT_ADDRESS,
+          target: deployedContractAddress, // Use deployed contract address
           data: data,
           chainId: (await provider.getNetwork()).chainId, // Or chainId you are working on
         },

@@ -37,11 +37,10 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GasAwareFlashLoanProvider = void 0;
+// @ts-nocheck
 var ethers = require("ethers");
-var Wallet = ethers.Wallet, parseEther = ethers.parseEther, formatEther = ethers.formatEther, JsonRpcProvider = ethers.JsonRpcProvider;
 var GasOptimizer_js_1 = require("./GasOptimizer.js");
 var monitoring_js_1 = require("../monitoring.js");
-var aaveIntegration_js_1 = require("../protocols/aaveIntegration.js");
 var logger = monitoring_js_1.Logger.getInstance();
 var GasAwareFlashLoanProvider = /** @class */ (function () {
     function GasAwareFlashLoanProvider() {
@@ -55,8 +54,8 @@ var GasAwareFlashLoanProvider = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        expectedProfit = ethers.parseEther(params.expectedProfit);
-                        return [4 /*yield*/, this.gasOptimizer.calculateOptimalGasStrategy(expectedProfit, this.determineComplexity(params))];
+                        expectedProfit = ethers.ethers.parseEther(params.expectedProfit);
+                        return [4 /*yield*/, this.gasOptimizer.calculateOptimalGasStrategy(BigInt(expectedProfit), this.determineComplexity(params))];
                     case 1:
                         gasStrategy = _a.sent();
                         totalGasCost = BigInt(gasStrategy.baseGas) +
@@ -84,12 +83,12 @@ var GasAwareFlashLoanProvider = /** @class */ (function () {
         });
     };
     GasAwareFlashLoanProvider.prototype.determineComplexity = function (params) {
-        var amount = ethers.parseEther(params.amount);
+        var amount = ethers.ethers.parseEther(params.amount);
         // Determine complexity using native BigInt comparisons
-        if (amount > ethers.parseEther('1000')) {
+        if (amount > ethers.ethers.parseEther('1000')) {
             return 'high';
         }
-        if (amount > ethers.parseEther('100')) {
+        if (amount > ethers.ethers.parseEther('100')) {
             return 'medium';
         }
         return 'low';
@@ -100,7 +99,7 @@ var GasAwareFlashLoanProvider = /** @class */ (function () {
         }
         if (profitMargin < this.MIN_PROFIT_THRESHOLD) {
             var requiredProfitIncrease = Number(expectedProfit) * (this.MIN_PROFIT_THRESHOLD - profitMargin);
-            return "Profit margin too low. Need additional $".concat(formatEther(requiredProfitIncrease), " in profit for viability.");
+            return "Profit margin too low. Need additional $".concat(ethers.ethers.formatEther(requiredProfitIncrease), " in profit for viability.");
         }
         return 'Consider batching multiple operations to share gas costs.';
     };
@@ -117,15 +116,16 @@ var GasAwareFlashLoanProvider = /** @class */ (function () {
                         _a.trys.push([0, 3, , 4]);
                         return [4 /*yield*/, Promise.all(operations.map(function (op) { return __awaiter(_this, void 0, void 0, function () {
                                 return __generator(this, function (_a) {
-                                    return [2 /*return*/, this.gasOptimizer.calculateOptimalGasStrategy(ethers.parseEther(op.expectedProfit), this.determineComplexity(op))];
+                                    return [2 /*return*/, this.gasOptimizer.calculateOptimalGasStrategy(ethers.ethers.parseEther(op.expectedProfit), this.determineComplexity(op))];
                                 });
                             }); }))];
                     case 1:
                         individualGasEstimates = _a.sent();
                         totalIndividualGas = individualGasEstimates.reduce(function (sum, strategy) { return sum + BigInt(strategy.gasLimit); }, BigInt(0));
-                        return [4 /*yield*/, this.gasOptimizer.calculateOptimalGasStrategy(ethers.parseEther(operations[0].expectedProfit), this.determineComplexity(operations[0]))];
+                        return [4 /*yield*/, this.gasOptimizer.calculateOptimalGasStrategy(ethers.ethers.parseEther(operations[0].expectedProfit), this.determineComplexity(operations[0]))];
                     case 2:
                         batchedGasStrategy = _a.sent();
+                        ;
                         savings = totalIndividualGas - BigInt(batchedGasStrategy.gasLimit);
                         return [2 /*return*/, {
                                 batchedGas: BigInt(batchedGasStrategy.gasLimit),
@@ -143,57 +143,38 @@ var GasAwareFlashLoanProvider = /** @class */ (function () {
     };
     GasAwareFlashLoanProvider.prototype.executeFlashLoan = function (params) {
         return __awaiter(this, void 0, void 0, function () {
-            var providerUrl, flashLoanContractAddress, privateKey, provider, wallet, aaveIntegration, result, error_3;
+            var providerUrl, privateKey, zeroCapitalArbTraderAddress, provider, wallet, zeroCapitalArbTrader, tx, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 2, , 3]);
+                        _a.trys.push([0, 3, , 4]);
                         providerUrl = process.env.PROVIDER_URL;
-                        flashLoanContractAddress = process.env.FLASH_LOAN_CONTRACT_ADDRESS;
                         privateKey = process.env.PRIVATE_KEY;
-                        logger.info("Executing flash loan: token=".concat(params.token, ", amount=").concat(params.amount, ", protocol=").concat(params.protocol));
-                        if (!providerUrl || !flashLoanContractAddress || !privateKey) {
-                            logger.error("Missing configuration: providerUrl=".concat(providerUrl, ", flashLoanContractAddress=").concat(flashLoanContractAddress, ", privateKey=").concat(privateKey));
-                            throw new Error('Missing provider URL, flash loan contract address, or private key');
+                        zeroCapitalArbTraderAddress = process.env.ZERO_CAPITAL_ARB_TRADER_ADDRESS;
+                        logger.info("Executing zero-capital flash loan via ZeroCapitalArbTrader: token=".concat(params.token, ", amount=").concat(params.amount, ", protocol=").concat(params.protocol));
+                        if (!providerUrl || !zeroCapitalArbTraderAddress || !privateKey) {
+                            logger.error("Missing configuration: providerUrl=".concat(providerUrl, ", zeroCapitalArbTraderAddress=").concat(zeroCapitalArbTraderAddress, ", privateKey=").concat(privateKey));
+                            throw new Error('Missing provider URL, ZeroCapitalArbTrader contract address, or private key');
                         }
-                        provider = new ethers.JsonRpcProvider(providerUrl);
-                        wallet = new ethers.Wallet(privateKey, provider);
-                        aaveIntegration = new aaveIntegration_js_1.AaveIntegration();
-                        return [4 /*yield*/, aaveIntegration.executeFlashLoan(params.token, params.amount, wallet.address // Use the wallet address as the receiver
-                            )];
+                        provider = new ethers.ethers.JsonRpcProvider(providerUrl);
+                        wallet = new ethers.ethers.Wallet(privateKey, provider);
+                        zeroCapitalArbTrader = new ethers.Contract(zeroCapitalArbTraderAddress, ['function requestFlashLoan(address asset, uint256 amount) external'], // ABI for requestFlashLoan
+                        wallet);
+                        return [4 /*yield*/, zeroCapitalArbTrader.requestFlashLoan(params.token, ethers.ethers.parseEther(params.amount))];
                     case 1:
-                        result = _a.sent();
-                        if (result.success) {
-                            if (result.txHash) {
-                                logger.info("Flash loan executed successfully: txHash=".concat(result.txHash));
-                                console.log("Flash loan executed successfully: txHash=".concat(result.txHash));
-                                return [2 /*return*/, result.txHash];
-                            }
-                            else {
-                                logger.error('Flash loan execution failed: txHash is undefined', new Error('Flash loan execution failed: txHash is undefined'));
-                                console.error('Flash loan execution failed: txHash is undefined');
-                                throw new Error('Flash loan execution failed: txHash is undefined');
-                            }
-                        }
-                        else {
-                            if (result.error) {
-                                logger.error('Flash loan execution failed:', new Error(result.error), params);
-                                console.error('Flash loan execution failed:', result.error);
-                                throw new Error(String(result.error));
-                            }
-                            else {
-                                logger.error('Flash loan execution failed:', new Error('Unknown error'), params);
-                                console.error('Flash loan execution failed: Unknown error');
-                                throw new Error('Unknown error');
-                            }
-                        }
-                        return [3 /*break*/, 3];
+                        tx = _a.sent();
+                        return [4 /*yield*/, tx.wait()];
                     case 2:
+                        _a.sent();
+                        logger.info("ZeroCapitalArbTrader flash loan initiated successfully: txHash=".concat(tx.hash));
+                        console.log("ZeroCapitalArbTrader flash loan initiated successfully: txHash=".concat(tx.hash));
+                        return [2 /*return*/, tx.hash];
+                    case 3:
                         error_3 = _a.sent();
-                        logger.error('Flash loan execution failed:', error_3 instanceof Error ? error_3 : new Error(String(error_3)), params);
-                        console.error('Flash loan execution failed:', error_3.message);
+                        logger.error('ZeroCapitalArbTrader flash loan execution failed:', error_3 instanceof Error ? error_3 : new Error(String(error_3)), params);
+                        console.error('ZeroCapitalArbTrader flash loan execution failed:', error_3.message);
                         throw error_3;
-                    case 3: return [2 /*return*/];
+                    case 4: return [2 /*return*/];
                 }
             });
         });

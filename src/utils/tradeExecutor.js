@@ -138,17 +138,23 @@ var TradeExecutor = /** @class */ (function () {
                                 takerFee: 0n,
                             },
                         };
+                        this.logger.info("Trade details: ".concat(JSON.stringify(tradeDetails)));
                         this.logger.info("Trade executed successfully: id=".concat(tradeDetails.id, ", flashLoanUsed=").concat(flashLoanUsed, ", tradeDetails=").concat(JSON.stringify(tradeDetails)));
                         console.log("Trade executed successfully: id=".concat(tradeDetails.id, ", flashLoanUsed=").concat(flashLoanUsed, ", tradeDetails=").concat(JSON.stringify(tradeDetails)));
-                        // Deposit profit to wallet
+                        // Deposit profit to wallet and allocate for future gas fees
                         return [4 /*yield*/, this.depositProfit(tradeDetails)];
                     case 9:
-                        // Deposit profit to wallet
+                        // Deposit profit to wallet and allocate for future gas fees
                         _a.sent();
                         return [2 /*return*/, { success: true, trade: tradeDetails }];
                     case 10:
                         error_1 = _a.sent();
-                        this.logger.error('Trade execution failed:', error_1, { type: type, platform: platform, amount: amount, price: price });
+                        this.logger.error('Trade execution failed:', error_1, {
+                            type: type,
+                            platform: platform,
+                            amount: amount,
+                            price: price,
+                        });
                         console.error("Trade execution failed: ".concat(error_1.message, ", type=").concat(type, ", platform=").concat(platform, ", amount=").concat(amount, ", price=").concat(price));
                         return [2 /*return*/, { success: false, error: error_1.message }];
                     case 11: return [2 /*return*/];
@@ -162,7 +168,9 @@ var TradeExecutor = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        profitBigint = (trade.type === 'SELL' ? 1n : -1n) * trade.amount * (trade.effectivePrice - trade.price);
+                        profitBigint = (trade.type === 'SELL' ? 1n : -1n) *
+                            trade.amount *
+                            (trade.effectivePrice - trade.price);
                         gasOptimizer = GasOptimizer_js_1.GasOptimizer.getInstance();
                         _a.label = 1;
                     case 1:
@@ -185,7 +193,7 @@ var TradeExecutor = /** @class */ (function () {
     };
     TradeExecutor.prototype.depositProfit = function (tradeDetails) {
         return __awaiter(this, void 0, void 0, function () {
-            var profit, walletAddress, value, tx, txHash, signError_1, error_3;
+            var profit, walletAddress, value, gasAllocationPercentage, gasAllocation, profitAfterGasAllocation, tx, txHash, signError_1, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -204,12 +212,15 @@ var TradeExecutor = /** @class */ (function () {
                             console.log('No profit to deposit.');
                             return [2 /*return*/];
                         }
-                        value = ethers_1.ethers.parseEther(ethers_1.ethers.formatEther(profit));
+                        value = ethers_1.ethers.ethers.parseEther(ethers_1.ethers.ethers.formatEther(profit));
+                        gasAllocationPercentage = parseFloat(process.env.GAS_ALLOCATION_PERCENTAGE || '0.05');
+                        gasAllocation = BigInt(Math.floor(Number(profit) * gasAllocationPercentage));
+                        profitAfterGasAllocation = profit - gasAllocation;
                         _a.label = 2;
                     case 2:
                         _a.trys.push([2, 5, , 6]);
                         return [4 /*yield*/, this.walletManagerInstance.signTransaction(walletAddress, // Use walletAddress from env variable
-                            walletAddress, value.toString())];
+                            walletAddress, ethers_1.ethers.ethers.formatEther(profitAfterGasAllocation))];
                     case 3:
                         tx = _a.sent();
                         return [4 /*yield*/, this.walletManagerInstance.sendTransaction(tx)];
@@ -217,6 +228,8 @@ var TradeExecutor = /** @class */ (function () {
                         txHash = _a.sent();
                         this.logger.info("Profit deposited to wallet ".concat(walletAddress, ", TX hash: ").concat(txHash));
                         console.log("Profit deposited to wallet ".concat(walletAddress, ", TX hash: ").concat(txHash));
+                        this.logger.info("Allocated ".concat(ethers_1.ethers.ethers.formatEther(gasAllocation), " ETH for future gas fees."));
+                        console.log("Allocated ".concat(ethers_1.ethers.ethers.formatEther(gasAllocation), " ETH for future gas fees."));
                         return [3 /*break*/, 6];
                     case 5:
                         signError_1 = _a.sent();

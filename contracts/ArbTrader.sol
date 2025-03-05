@@ -7,7 +7,7 @@ import {FlashLoanReceiverBase} from "@aave/core-v3/contracts/flashloan/base/Flas
 import {IPool} from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import {IUniswapV2Router02} from './interfaces/IUniswapV2Router02.sol';
 import {IUniswapV2Pair} from './interfaces/IUniswapV2Pair.sol'; // Import Uniswap Pair interface
-import {AggregatorV3Interface} from "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import {AggregatorV3Interface} from "node_modules/@chainlink/contracts/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "hardhat/console.sol";
 
 contract ArbTrader is FlashLoanReceiverBase {
@@ -213,9 +213,8 @@ contract ArbTrader is FlashLoanReceiverBase {
                 ethArbProfit = amountOutAfterFees - initialAmount;
                 console.log("ETH Arbitrage Profit:", ethArbProfit);
 
-                // Transfer net profit to owner
-                payable(owner).transfer(ethArbProfit);
-
+                // Return profit
+                return true;
 
                 // --- End Buy Uniswap, Sell Sushiswap ---
             } else if (keccak256(bytes(ethTradeDirection)) == keccak256(bytes("Buy Sushiswap, Sell Uniswap"))) {
@@ -275,8 +274,8 @@ contract ArbTrader is FlashLoanReceiverBase {
                 ethArbProfit = amountOutAfterFees - initialAmount;
                 console.log("ETH Arbitrage Profit:", ethArbProfit);
 
-                // Transfer net profit to owner
-                payable(owner).transfer(ethArbProfit);
+                // Return profit
+                return true;
                 // --- End Buy Sushiswap, Sell Uniswap ---
             }
         }
@@ -340,6 +339,8 @@ contract ArbTrader is FlashLoanReceiverBase {
                 btcArbProfit = amountOutAfterFees - initialAmount;
                 console.log("BTC Arbitrage Profit:", btcArbProfit);
 
+                // Return profit
+                return true;
 
                 // --- End Buy Uniswap, Sell Sushiswap ---
             } else if (keccak256(bytes(btcTradeDirection)) == keccak256(bytes("Buy Sushiswap, Sell Uniswap"))) {
@@ -398,6 +399,9 @@ contract ArbTrader is FlashLoanReceiverBase {
                 uint256 amountOutAfterFees = amountOut - uniswapSwapFee;
                 btcArbProfit = amountOutAfterFees - initialAmount;
                 console.log("BTC Arbitrage Profit:", btcArbProfit);
+
+                // Return profit
+                return true;
                 // --- End Buy Sushiswap, Sell Uniswap ---
             }
         }
@@ -440,4 +444,3 @@ contract ArbTrader is FlashLoanReceiverBase {
 
     receive() external payable {}
 }
-</file_content>
