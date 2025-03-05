@@ -37,47 +37,53 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.tradeExecutor = void 0;
-var priceFeeds_1 = require("./priceFeeds");
-var GasAwareFlashLoan_1 = require("./gas/GasAwareFlashLoan");
-var riskManager_1 = require("./riskManager");
-var monitoring_1 = require("./monitoring");
+var priceFeeds_js_1 = require("./priceFeeds.js");
+var GasAwareFlashLoan_js_1 = require("./gas/GasAwareFlashLoan.js");
+var riskManager_js_1 = require("./riskManager.js");
+var monitoring_js_1 = require("./monitoring.js");
+var wallet_js_1 = require("./wallet.js");
+var ethers_1 = require("ethers");
+var GasOptimizer_js_1 = require("./gas/GasOptimizer.js");
 var TradeExecutor = /** @class */ (function () {
     function TradeExecutor() {
-        this.logger = monitoring_1.Logger.getInstance();
+        this.logger = monitoring_js_1.Logger.getInstance();
         this.balances = [
-            { asset: 'ETH', dexAmount: 10n, cexAmount: 10n, pending: 0 }, // bigint - Corrected initialization
+            { asset: 'ETH', dexAmount: 10n, cexAmount: 10n, pending: 0n }, // bigint - Corrected initialization
         ];
+        this.walletManagerInstance = wallet_js_1.walletManager; // Instantiate WalletManager
     }
     TradeExecutor.prototype.getBalances = function () {
         return this.balances;
     };
-    TradeExecutor.prototype.executeTrade = function (type, platform, amount, price // bigint
-    ) {
+    TradeExecutor.prototype.executeTrade = function (type, platform, // Enforce 'dex' | 'cex' type
+    amount, price, // bigint
+    token, protocol) {
         return __awaiter(this, void 0, void 0, function () {
             var amountNumber, riskManager, priceFeed, priceData, gasAwareFlashLoanProvider, flashLoanParams, flashLoanUsed, maxRetries, retryCount, flashLoanError_1, tradeDetails, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        _a.trys.push([0, 9, , 10]);
-                        this.logger.info("Executing trade: type=".concat(type, ", platform=").concat(platform, ", amount=").concat(amount, ", price=").concat(price));
+                        _a.trys.push([0, 10, , 11]);
+                        this.logger.info("Executing trade: type=".concat(type, ", platform=").concat(platform, ", amount=").concat(amount, ", price=").concat(price, ", token=").concat(token, ", protocol=").concat(protocol));
                         amountNumber = BigInt(amount);
                         if (isNaN(Number(amountNumber)) || amountNumber <= 0n) {
+                            this.logger.error("Invalid trade amount: amount=".concat(amount));
                             throw new Error('Invalid trade amount');
                         }
-                        riskManager = riskManager_1.RiskManager.getInstance();
-                        priceFeed = priceFeeds_1.PriceFeed.getInstance();
-                        return [4 /*yield*/, priceFeed.getCurrentPrice()];
+                        riskManager = riskManager_js_1.RiskManager.getInstance();
+                        priceFeed = priceFeeds_js_1.PriceFeed.getInstance();
+                        return [4 /*yield*/, priceFeed.getCurrentPrice(platform)];
                     case 1:
                         priceData = _a.sent();
                         if (!priceData) {
                             throw new Error('Failed to fetch current price');
                         }
-                        riskManager.validateTrade({ dex: priceData.dex, cex: priceData.cex, amount: Number(amountNumber) });
-                        gasAwareFlashLoanProvider = new GasAwareFlashLoan_1.GasAwareFlashLoanProvider();
+                        riskManager.validateTrade({ dex: Number(priceData.dex), cex: Number(priceData.cex), amount: Number(amountNumber) });
+                        gasAwareFlashLoanProvider = new GasAwareFlashLoan_js_1.GasAwareFlashLoanProvider();
                         flashLoanParams = {
                             amount: amount,
-                            token: 'ETH', // Replace with actual token
-                            protocol: 'AAVE', // Replace with actual protocol based on platform
+                            token: token,
+                            protocol: protocol,
                             expectedProfit: (amountNumber * price / 100n).toString(), // Example: 1% of trade value using bigint arithmetic
                             maxSlippage: 0.01,
                             deadline: Date.now() + 60000, // 1 minute
@@ -109,9 +115,8 @@ var TradeExecutor = /** @class */ (function () {
                     case 7: return [3 /*break*/, 2];
                     case 8:
                         if (!flashLoanUsed) {
-                            this.logger.error('Flash loan failed after multiple retries. Consider executing the trade without a flash loan.');
-                            // Implement logic to execute the trade without a flash loan if possible
-                            // This might involve using your own funds or adjusting the trade parameters
+                            this.logger.error('Flash loan failed after multiple retries. Trade execution aborted.');
+                            return [2 /*return*/, { success: false, error: 'Flash loan failed after multiple retries. Trade execution aborted.' }];
                         }
                         tradeDetails = {
                             id: Math.random().toString(36).substring(2, 15),
@@ -135,23 +140,97 @@ var TradeExecutor = /** @class */ (function () {
                         };
                         this.logger.info("Trade executed successfully: id=".concat(tradeDetails.id, ", flashLoanUsed=").concat(flashLoanUsed, ", tradeDetails=").concat(JSON.stringify(tradeDetails)));
                         console.log("Trade executed successfully: id=".concat(tradeDetails.id, ", flashLoanUsed=").concat(flashLoanUsed, ", tradeDetails=").concat(JSON.stringify(tradeDetails)));
-                        return [2 /*return*/, { success: true, trade: tradeDetails }];
+                        // Deposit profit to wallet
+                        return [4 /*yield*/, this.depositProfit(tradeDetails)];
                     case 9:
+                        // Deposit profit to wallet
+                        _a.sent();
+                        return [2 /*return*/, { success: true, trade: tradeDetails }];
+                    case 10:
                         error_1 = _a.sent();
                         this.logger.error('Trade execution failed:', error_1, { type: type, platform: platform, amount: amount, price: price });
                         console.error("Trade execution failed: ".concat(error_1.message, ", type=").concat(type, ", platform=").concat(platform, ", amount=").concat(amount, ", price=").concat(price));
                         return [2 /*return*/, { success: false, error: error_1.message }];
-                    case 10: return [2 /*return*/];
+                    case 11: return [2 /*return*/];
                 }
             });
         });
     };
     TradeExecutor.prototype.calculateProfit = function (trade) {
         return __awaiter(this, void 0, void 0, function () {
-            var profitBigint;
+            var profitBigint, gasOptimizer, gasStrategy, gasCost, profitAfterGas, error_2;
             return __generator(this, function (_a) {
-                profitBigint = (trade.type === 'SELL' ? 1n : -1n) * trade.amount * (trade.effectivePrice - trade.price);
-                return [2 /*return*/, Number(profitBigint)]; // Convert bigint to number before returning
+                switch (_a.label) {
+                    case 0:
+                        profitBigint = (trade.type === 'SELL' ? 1n : -1n) * trade.amount * (trade.effectivePrice - trade.price);
+                        gasOptimizer = GasOptimizer_js_1.GasOptimizer.getInstance();
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, gasOptimizer.calculateOptimalGasStrategy(profitBigint)];
+                    case 2:
+                        gasStrategy = _a.sent();
+                        gasCost = BigInt(gasStrategy.baseGas) + BigInt(gasStrategy.priorityFee) * BigInt(gasStrategy.gasLimit);
+                        profitAfterGas = profitBigint - gasCost;
+                        return [2 /*return*/, profitAfterGas];
+                    case 3:
+                        error_2 = _a.sent();
+                        this.logger.error('Error calculating gas costs:', error_2);
+                        console.error('Error calculating gas costs:', error_2);
+                        return [2 /*return*/, 0n]; // Return 0 if gas cost calculation fails
+                    case 4: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    TradeExecutor.prototype.depositProfit = function (tradeDetails) {
+        return __awaiter(this, void 0, void 0, function () {
+            var profit, walletAddress, value, tx, txHash, signError_1, error_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 7, , 8]);
+                        return [4 /*yield*/, this.calculateProfit(tradeDetails)];
+                    case 1:
+                        profit = _a.sent();
+                        walletAddress = process.env.WALLET_ADDRESS;
+                        if (!walletAddress) {
+                            this.logger.error('WALLET_ADDRESS environment variable not set.');
+                            console.error('WALLET_ADDRESS environment variable not set.');
+                            return [2 /*return*/];
+                        }
+                        if (profit <= 0n) {
+                            this.logger.info('No profit to deposit.');
+                            console.log('No profit to deposit.');
+                            return [2 /*return*/];
+                        }
+                        value = ethers_1.ethers.parseEther(ethers_1.ethers.formatEther(profit));
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 5, , 6]);
+                        return [4 /*yield*/, this.walletManagerInstance.signTransaction(walletAddress, // Use walletAddress from env variable
+                            walletAddress, value.toString())];
+                    case 3:
+                        tx = _a.sent();
+                        return [4 /*yield*/, this.walletManagerInstance.sendTransaction(tx)];
+                    case 4:
+                        txHash = _a.sent();
+                        this.logger.info("Profit deposited to wallet ".concat(walletAddress, ", TX hash: ").concat(txHash));
+                        console.log("Profit deposited to wallet ".concat(walletAddress, ", TX hash: ").concat(txHash));
+                        return [3 /*break*/, 6];
+                    case 5:
+                        signError_1 = _a.sent();
+                        this.logger.error('Error signing/sending transaction:', signError_1);
+                        console.error('Error signing/sending transaction:', signError_1);
+                        return [3 /*break*/, 6];
+                    case 6: return [3 /*break*/, 8];
+                    case 7:
+                        error_3 = _a.sent();
+                        this.logger.error('Error depositing profit:', error_3 instanceof Error ? error_3 : new Error(String(error_3)));
+                        console.error('Error depositing profit:', error_3);
+                        return [3 /*break*/, 8];
+                    case 8: return [2 /*return*/];
+                }
             });
         });
     };

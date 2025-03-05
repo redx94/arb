@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { PriceData } from '../types/index.js';
 import { EventEmitter } from 'events';
+import { Logger } from './monitoring.js';
 
 export class PriceFeed extends EventEmitter {
   private static instance: PriceFeed;
@@ -9,6 +10,7 @@ export class PriceFeed extends EventEmitter {
   private mockData: PriceData[] = [];
   private apiKey: string | null = process.env.COINGECKO_API_KEY || null;
   private apiBaseUrl: string = 'https://api.coingecko.com/api/v3';
+  private logger = Logger.getInstance();
 
   private constructor() {
     super();
@@ -56,20 +58,22 @@ export class PriceFeed extends EventEmitter {
 
   public async getCurrentPrice(platform: 'dex' | 'cex'): Promise<PriceData | null> {
     try {
-      const apiUrl = this.getApiUrl('/simple/price', { ids: 'ethereum', vs_currencies: 'usd' });
+      const apiUrl = this.getApiUrl(`/coins/ethereum`, { vs_currency: 'usd' });
       console.log(`Fetching price from CoinGecko API for ${platform}:`, apiUrl);
+      this.logger.info(`Fetching price from CoinGecko API for ${platform}: ${apiUrl}`);
       const response = await axios.get(apiUrl, {
         // Future: Authentication headers can be added here if needed.
       });
       console.log('CoinGecko API response:', response.data);
-      if (!response.data || !response.data.ethereum || !response.data.ethereum.usd) {
+      this.logger.info(`CoinGecko API response for ${platform}: ${JSON.stringify(response.data)}`);
+      if (!response.data || !response.data.market_data || !response.data.market_data.current_price || !response.data.market_data.current_price.usd) {
         const errorMessage = 'Invalid response format from CoinGecko API';
         console.error(errorMessage, 'Response data:', response.data);
-        this.emit('error', errorMessage, response.data);
+        this.logger.error(errorMessage, response.data);
+        console.error(errorMessage, 'Response data:', response.data);
         return null;
       }
-      const data = response.data.ethereum;
-      const price = data.usd;
+      const price = Number(Math.round(response.data.market_data.current_price.usd));
 
       return {
         token: 'ETH',
@@ -107,6 +111,11 @@ export class PriceFeed extends EventEmitter {
       this.emit('error', 'Failed to fetch historical price from CoinGecko API', error);
       return null;
     }
+  }
+
+  public async getDexLiquidity(): Promise<number> {
+    // Mock liquidity value for now
+    return 1000000;
   }
 }
 

@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  root: '.', // Explicitly set project root
   build: {
     rollupOptions: {
       input: 'src/main.tsx',

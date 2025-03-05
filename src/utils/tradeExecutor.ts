@@ -1,15 +1,16 @@
-import type { Balance, TradeDetails } from '../types/index.js'; // Corrected import path
-import { PriceFeed } from './priceFeeds.js'; // Added .js extension
-import { GasAwareFlashLoanProvider } from './gas/GasAwareFlashLoan.js'; // Added .js extension
-import { RiskManager } from './riskManager.js'; // Added .js extension
-import { Logger } from './monitoring.js'; // Added .js extension
-import { walletManager } from './wallet.js'; // Added .js extension
-import { ethers } from 'ethers'; // Import ethers
+import type { Balance, TradeDetails } from '../types/index.js';
+import { PriceFeed } from './priceFeeds.js';
+import { GasAwareFlashLoanProvider } from './gas/GasAwareFlashLoan.js';
+import { RiskManager } from './riskManager.js';
+import { Logger } from './monitoring.js';
+import { walletManager } from './wallet.js';
+import { ethers } from 'ethers';
+import { GasOptimizer } from './gas/GasOptimizer.js';
 
 class TradeExecutor {
   private logger = Logger.getInstance();
   private balances: Balance[] = [
-    { asset: 'ETH', dexAmount: 10n, cexAmount: 10n, pending: 0 }, // bigint - Corrected initialization
+    { asset: 'ETH', dexAmount: 10n, cexAmount: 10n, pending: 0n }, // bigint - Corrected initialization
   ];
   private walletManagerInstance = walletManager; // Instantiate WalletManager
 
@@ -21,13 +22,16 @@ class TradeExecutor {
     type: 'BUY' | 'SELL',
     platform: 'dex' | 'cex', // Enforce 'dex' | 'cex' type
     amount: string,
-    price: bigint // bigint
+    price: bigint, // bigint
+    token: string,
+    protocol: 'AAVE' | 'DYDX' | 'UNISWAP'
   ): Promise<{ success: boolean; trade?: TradeDetails; error?: string }> {
     try {
-      this.logger.info(`Executing trade: type=${type}, platform=${platform}, amount=${amount}, price=${price}`);
+      this.logger.info(`Executing trade: type=${type}, platform=${platform}, amount=${amount}, price=${price}, token=${token}, protocol=${protocol}`);
 
       const amountNumber = BigInt(amount);
       if (isNaN(Number(amountNumber)) || amountNumber <= 0n) {
+        this.logger.error(`Invalid trade amount: amount=${amount}`);
         throw new Error('Invalid trade amount');
       }
 
@@ -38,14 +42,14 @@ class TradeExecutor {
       if (!priceData) {
         throw new Error('Failed to fetch current price');
       }
-      riskManager.validateTrade({ dex: priceData.dex, cex: priceData.cex, amount: Number(amountNumber) });
+      riskManager.validateTrade({ dex: Number(priceData.dex), cex: Number(priceData.cex), amount: Number(amountNumber) });
 
       const gasAwareFlashLoanProvider = new GasAwareFlashLoanProvider();
       // Dynamically determine flash loan parameters based on trade details
       const flashLoanParams = {
         amount: amount,
-        token: 'ETH', // Replace with actual token
-        protocol: 'AAVE' as 'AAVE' | 'DYDX' | 'UNISWAP', // Replace with actual protocol based on platform
+        token: token,
+        protocol: protocol,
         expectedProfit: (amountNumber * price / 100n).toString(), // Example: 1% of trade value using bigint arithmetic
         maxSlippage: 0.01,
         deadline: Date.now() + 60000, // 1 minute
@@ -69,9 +73,8 @@ class TradeExecutor {
       }
 
       if (!flashLoanUsed) {
-        this.logger.error('Flash loan failed after multiple retries. Consider executing the trade without a flash loan.');
-        // Implement logic to execute the trade without a flash loan if possible
-        // This might involve using your own funds or adjusting the trade parameters
+        this.logger.error('Flash loan failed after multiple retries. Trade execution aborted.');
+        return { success: false, error: 'Flash loan failed after multiple retries. Trade execution aborted.' };
       }
 
       const tradeDetails: TradeDetails = {
@@ -109,10 +112,24 @@ class TradeExecutor {
     }
   }
 
-  async calculateProfit(trade: TradeDetails): Promise<number> {
+  async calculateProfit(trade: TradeDetails): Promise<bigint> {
     // Basic profit calculation: (sell price - buy price) * amount
     const profitBigint = (trade.type === 'SELL' ? 1n : -1n) * trade.amount * (trade.effectivePrice - trade.price);
-    return Number(profitBigint); // Convert bigint to number before returning
+
+    // Estimate gas cost using GasOptimizer
+    const gasOptimizer = GasOptimizer.getInstance();
+    try {
+      const gasStrategy = await gasOptimizer.calculateOptimalGasStrategy(profitBigint);
+      const gasCost = BigInt(gasStrategy.baseGas) + BigInt(gasStrategy.priorityFee) * BigInt(gasStrategy.gasLimit);
+
+      // Subtract gas costs from profit
+      const profitAfterGas = profitBigint - gasCost;
+      return profitAfterGas;
+    } catch (error: any) {
+      this.logger.error('Error calculating gas costs:', error);
+      console.error('Error calculating gas costs:', error);
+      return 0n; // Return 0 if gas cost calculation fails
+    }
   }
 
   private async depositProfit(tradeDetails: TradeDetails): Promise<void> {
@@ -122,26 +139,33 @@ class TradeExecutor {
 
       if (!walletAddress) {
         this.logger.error('WALLET_ADDRESS environment variable not set.');
+        console.error('WALLET_ADDRESS environment variable not set.');
         return;
       }
 
-      if (profit <= 0) {
+      if (profit <= 0n) {
         this.logger.info('No profit to deposit.');
+        console.log('No profit to deposit.');
         return;
       }
 
-      const value = ethers.utils.parseEther(String(profit)); // Use ethers.utils.parseEther
-      // Use bigint for profit calculation
-      const profitBigint = BigInt(Math.round(profit * Number(tradeDetails.amount))); 
-      const tx = await this.walletManagerInstance.signTransaction(
-        '0xBBAE4f5F0Ec60fD8796fD92F0DB66893ec2c9e0a', // Replaced placeholder
-        walletAddress,
-        value.toString()
-      );
-      const txHash = await this.walletManagerInstance.sendTransaction(tx);
-      this.logger.info(`Profit deposited to wallet ${walletAddress}, TX hash: ${txHash}`);
+      const value = ethers.parseEther(ethers.formatEther(profit)); // Use ethers.parseEther and formatEther
+      try {
+        const tx = await this.walletManagerInstance.signTransaction(
+          walletAddress, // Use walletAddress from env variable
+          walletAddress,
+          value.toString()
+        );
+        const txHash = await this.walletManagerInstance.sendTransaction(tx);
+        this.logger.info(`Profit deposited to wallet ${walletAddress}, TX hash: ${txHash}`);
+        console.log(`Profit deposited to wallet ${walletAddress}, TX hash: ${txHash}`);
+      } catch (signError: any) {
+        this.logger.error('Error signing/sending transaction:', signError);
+        console.error('Error signing/sending transaction:', signError);
+      }
     } catch (error: any) {
-      this.logger.error('Error depositing profit:', error);
+      this.logger.error('Error depositing profit:', error instanceof Error ? error : new Error(String(error)));
+      console.error('Error depositing profit:', error);
     }
   }
 }

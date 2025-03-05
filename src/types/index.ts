@@ -28,7 +28,7 @@ export type Balance = {
   asset: string;
   dexAmount: bigint; // bigint
   cexAmount: bigint; // bigint
-  pending: number;
+  pending: bigint;
 }
 
 export type NetworkConditions = {
@@ -78,3 +78,12 @@ export enum RiskLevel {
 export type Transaction = any;
 export type Wallet = any;
 export type TradeResult = any;
+
+export interface FlashLoanParams {
+  token: string;
+  amount: string;
+  expectedProfit: string;
+  deadline: number;
+  protocol: 'AAVE' | 'DYDX' | 'UNISWAP';
+  maxSlippage?: number;
+}

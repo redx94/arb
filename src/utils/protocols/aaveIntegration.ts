@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import { Logger } from '../monitoring';
+import { Logger } from '../monitoring.js';
 
 const logger = Logger.getInstance();
 
@@ -31,14 +31,16 @@ export class AaveIntegration {
     token: string,
     amount: string,
     receiver: string,
-    params: string
   ): Promise<{ success: boolean; txHash?: string; error?: string }> {
     try {
       const providerUrl = process.env.PROVIDER_URL;
       const privateKey = process.env.PRIVATE_KEY;
-      const aavePoolAddress = '0x794a61358D6845594F94dc1DB027E1266356b045'; // Replace with the actual Aave Pool address
+      const aavePoolAddress = process.env.AAVE_POOL_ADDRESS;
+
+      logger.info(`Executing Aave flash loan: token=${token}, amount=${amount}, receiver=${receiver}`);
 
       if (!providerUrl || !privateKey || !aavePoolAddress) {
+        logger.error(`Missing configuration: providerUrl=${providerUrl}, privateKey=${privateKey}, aavePoolAddress=${aavePoolAddress}`);
         throw new Error(
           'Missing provider URL, private key, or Aave Pool address'
         );
@@ -77,8 +79,7 @@ export class AaveIntegration {
       logger.error('Aave flash loan execution failed:', error, {
         token,
         amount,
-        receiver,
-        params,
+        receiver
       });
       console.error('Aave flash loan execution failed:', error.message);
       return { success: false, error: error.message };

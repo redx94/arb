@@ -68,60 +68,151 @@ var priceFeeds_js_1 = require("../priceFeeds.js");
 var riskManager_js_1 = require("../riskManager.js");
 var monitoring_js_1 = require("../monitoring.js");
 var tradeExecutor_js_1 = require("../tradeExecutor.js");
+var GasAwareFlashLoan_js_1 = require("../gas/GasAwareFlashLoan.js");
 var ArbitrageEngine = /** @class */ (function (_super) {
     __extends(ArbitrageEngine, _super);
     function ArbitrageEngine() {
         var _this = _super.call(this) || this;
         _this.running = false;
         _this.logger = monitoring_js_1.Logger.getInstance();
+        _this.unsubscribePriceFeed = null;
+        _this.gasAwareFlashLoanProvider = new GasAwareFlashLoan_js_1.GasAwareFlashLoanProvider();
         _this.handlePrice = function (data) { return __awaiter(_this, void 0, void 0, function () {
-            var profitThreshold, dexPriceData, cexPriceData, diff, tradeAmount, dataWithAmount, dexPriceBigInt, tradeResult, error_1;
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var profitThreshold, dexPriceData, cexPriceData, diff, defaultTradeAmount, tradeAmount, dataWithAmount, riskError_1, buyPlatform, sellPlatform, tradeType, priceNumber, priceBigInt, tokens, protocols, _i, tokens_1, token, _a, protocols_1, protocol, flashLoanParams, txHash, flashLoanError_1, tradeResult, tradeError_1, flashLoanError_2, error_1;
+            var _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _b.trys.push([0, 6, , 7]);
+                        console.log('handlePrice: start'); // Added console log
+                        this.logger.info('Handling price update...'); // Added log
+                        this.logger.info("Received price data: ".concat(JSON.stringify(data))); // Log price data
+                        _c.label = 1;
+                    case 1:
+                        _c.trys.push([1, 23, , 24]);
                         profitThreshold = parseFloat(process.env.PROFIT_THRESHOLD || '1');
                         return [4 /*yield*/, priceFeeds_js_1.PriceFeed.getInstance().getCurrentPrice('dex')];
-                    case 1:
-                        dexPriceData = _b.sent();
-                        return [4 /*yield*/, priceFeeds_js_1.PriceFeed.getInstance().getCurrentPrice('cex')];
                     case 2:
-                        cexPriceData = _b.sent();
+                        dexPriceData = _c.sent();
+                        this.logger.info("DEX price data: ".concat(JSON.stringify(dexPriceData))); // Log DEX price data
+                        return [4 /*yield*/, priceFeeds_js_1.PriceFeed.getInstance().getCurrentPrice('cex')];
+                    case 3:
+                        cexPriceData = _c.sent();
+                        this.logger.info("CEX price data: ".concat(JSON.stringify(cexPriceData))); // Log CEX price data
                         if (!dexPriceData || !cexPriceData) {
                             this.logger.error('Failed to fetch dex or cex price data.');
+                            this.logger.error("dexPriceData: ".concat(JSON.stringify(dexPriceData), ", cexPriceData: ").concat(JSON.stringify(cexPriceData)));
                             return [2 /*return*/];
                         }
                         diff = Math.abs(cexPriceData.price - dexPriceData.price) / Math.min(dexPriceData.price, cexPriceData.price) * 100;
-                        if (!(diff >= profitThreshold)) return [3 /*break*/, 5];
+                        this.logger.info("Price difference: dex=".concat(dexPriceData.price, ", cex=").concat(cexPriceData.price, ", diff=").concat(diff));
+                        console.log("dexPriceData.price: ".concat(dexPriceData.price, ", cexPriceData.price: ").concat(cexPriceData.price, ", diff: ").concat(diff));
+                        if (!(diff >= profitThreshold)) return [3 /*break*/, 22];
                         console.log("Arbitrage opportunity detected: dex=".concat(dexPriceData.price, ", cex=").concat(cexPriceData.price, ", diff=").concat(diff));
                         this.logger.info("Arbitrage opportunity detected: dex=".concat(dexPriceData.price, ", cex=").concat(cexPriceData.price));
-                        this.emit('arbitrageOpportunity', { dex: dexPriceData.price, cex: cexPriceData.price }); // Emit price data
-                        tradeAmount = data.amount !== undefined ? String(data.amount) : '1';
+                        this.emit('arbitrageOpportunity', { dex: Number(dexPriceData.dex), cex: Number(cexPriceData.cex) }); // Emit price data
+                        defaultTradeAmount = process.env.TRADE_AMOUNT || '1';
+                        tradeAmount = data.amount !== undefined ? String(data.amount) : defaultTradeAmount;
                         dataWithAmount = __assign(__assign({}, data), { amount: parseFloat(tradeAmount) });
-                        return [4 /*yield*/, riskManager_js_1.RiskManager.getInstance().validateTrade(dataWithAmount)];
-                    case 3:
-                        _b.sent();
-                        dexPriceBigInt = BigInt(Math.round(dexPriceData.price));
-                        return [4 /*yield*/, tradeExecutor_js_1.tradeExecutor.executeTrade('BUY', 'DEXPlatform', tradeAmount, dexPriceBigInt)];
+                        this.logger.info("Validating trade: dex=".concat(dexPriceData.dex, ", cex=").concat(cexPriceData.cex, ", amount=").concat(tradeAmount));
+                        _c.label = 4;
                     case 4:
-                        tradeResult = _b.sent();
+                        _c.trys.push([4, 6, , 7]);
+                        return [4 /*yield*/, riskManager_js_1.RiskManager.getInstance().validateTrade({ dex: Number(Number(dexPriceData.dex)), cex: Number(Number(cexPriceData.cex)), amount: parseFloat(tradeAmount) })];
+                    case 5:
+                        _c.sent();
+                        this.logger.info('Trade validated successfully.');
+                        return [3 /*break*/, 7];
+                    case 6:
+                        riskError_1 = _c.sent();
+                        this.logger.error("Trade validation failed: ".concat(riskError_1), riskError_1 instanceof Error ? riskError_1 : new Error(String(riskError_1)));
+                        return [2 /*return*/];
+                    case 7:
+                        buyPlatform = dexPriceData.price < cexPriceData.price ? 'dex' : 'cex';
+                        sellPlatform = dexPriceData.price < cexPriceData.price ? 'cex' : 'dex';
+                        tradeType = dexPriceData.price < cexPriceData.price ? 'BUY' : 'SELL';
+                        priceNumber = dexPriceData.price < cexPriceData.price ? dexPriceData.price : cexPriceData.price;
+                        priceBigInt = BigInt(priceNumber);
+                        tokens = (process.env.TOKENS || 'ETH,BTC').split(',');
+                        protocols = (process.env.PROTOCOLS || 'AAVE').split(',');
+                        _c.label = 8;
+                    case 8:
+                        _c.trys.push([8, 21, , 22]);
+                        _i = 0, tokens_1 = tokens;
+                        _c.label = 9;
+                    case 9:
+                        if (!(_i < tokens_1.length)) return [3 /*break*/, 20];
+                        token = tokens_1[_i];
+                        _a = 0, protocols_1 = protocols;
+                        _c.label = 10;
+                    case 10:
+                        if (!(_a < protocols_1.length)) return [3 /*break*/, 19];
+                        protocol = protocols_1[_a];
+                        flashLoanParams = {
+                            token: token, // Assuming the first token is the flash loan token
+                            amount: tradeAmount,
+                            expectedProfit: String(diff), // Using the price difference as the expected profit
+                            deadline: Date.now() + 60000, // 1 minute deadline
+                            protocol: protocol,
+                            maxSlippage: 0,
+                        };
+                        // Execute flash loan
+                        this.logger.info("Executing flash loan: token=".concat(token, ", amount=").concat(tradeAmount, ", protocol=").concat(protocol));
+                        txHash = void 0;
+                        _c.label = 11;
+                    case 11:
+                        _c.trys.push([11, 13, , 14]);
+                        return [4 /*yield*/, this.gasAwareFlashLoanProvider.executeFlashLoan(flashLoanParams)];
+                    case 12:
+                        txHash = _c.sent();
+                        this.logger.info("Flash loan executed successfully: txHash=".concat(txHash));
+                        return [3 /*break*/, 14];
+                    case 13:
+                        flashLoanError_1 = _c.sent();
+                        this.logger.error("Flash loan execution failed for token=".concat(token, ", protocol=").concat(protocol, ": ").concat(flashLoanError_1), flashLoanError_1 instanceof Error ? flashLoanError_1 : new Error(String(flashLoanError_1)));
+                        this.emit('error', flashLoanError_1);
+                        return [3 /*break*/, 18]; // Skip to the next token/protocol combination
+                    case 14:
+                        this.logger.info("Executing trade: tradeType=".concat(tradeType, ", buyPlatform=").concat(buyPlatform, ", amount=").concat(tradeAmount, ", token=").concat(token, ", protocol=").concat(protocol));
+                        tradeResult = void 0;
+                        _c.label = 15;
+                    case 15:
+                        _c.trys.push([15, 17, , 18]);
+                        return [4 /*yield*/, tradeExecutor_js_1.tradeExecutor.executeTrade(tradeType, buyPlatform, tradeAmount, priceBigInt, token, protocol)];
+                    case 16:
+                        tradeResult = _c.sent();
                         if (tradeResult.success) {
-                            this.logger.info("Trade executed successfully: id=".concat((_a = tradeResult.trade) === null || _a === void 0 ? void 0 : _a.id));
+                            this.logger.info("Trade executed successfully: id=".concat((_b = tradeResult.trade) === null || _b === void 0 ? void 0 : _b.id, ", token=").concat(token, ", protocol=").concat(protocol));
                             this.emit('tradeExecuted', tradeResult.trade);
                         }
                         else {
-                            this.logger.error("Trade execution failed: ".concat(tradeResult.error));
+                            this.logger.error("Trade execution failed for token=".concat(token, ", protocol=").concat(protocol, ": ").concat(tradeResult.error));
                             this.emit('error', tradeResult.error);
                         }
-                        _b.label = 5;
-                    case 5: return [3 /*break*/, 7];
-                    case 6:
-                        error_1 = _b.sent();
+                        return [3 /*break*/, 18];
+                    case 17:
+                        tradeError_1 = _c.sent();
+                        this.logger.error("Trade execution failed for token=".concat(token, ", protocol=").concat(protocol, ": ").concat(tradeError_1), tradeError_1 instanceof Error ? tradeError_1 : new Error(String(tradeError_1)));
+                        this.emit('error', tradeError_1);
+                        return [3 /*break*/, 18];
+                    case 18:
+                        _a++;
+                        return [3 /*break*/, 10];
+                    case 19:
+                        _i++;
+                        return [3 /*break*/, 9];
+                    case 20: return [3 /*break*/, 22];
+                    case 21:
+                        flashLoanError_2 = _c.sent();
+                        this.logger.error("Flash loan execution failed: ".concat(flashLoanError_2), flashLoanError_2 instanceof Error ? flashLoanError_2 : new Error(String(flashLoanError_2)));
+                        this.emit('error', flashLoanError_2);
+                        return [3 /*break*/, 22];
+                    case 22: return [3 /*break*/, 24];
+                    case 23:
+                        error_1 = _c.sent();
                         this.logger.error('Error in handlePrice:', error_1 instanceof Error ? error_1 : new Error(String(error_1)));
                         this.emit('error', error_1);
-                        return [3 /*break*/, 7];
-                    case 7: return [2 /*return*/];
+                        return [3 /*break*/, 24];
+                    case 24: return [2 /*return*/];
                 }
             });
         }); };
@@ -134,18 +225,32 @@ var ArbitrageEngine = /** @class */ (function (_super) {
         return ArbitrageEngine.instance;
     };
     ArbitrageEngine.prototype.start = function () {
-        if (this.running)
+        if (this.running) {
+            this.logger.info('ArbitrageEngine already running.');
             return;
+        }
+        this.logger.info('ArbitrageEngine starting...'); // Added log
+        this.logger.info("PROFIT_THRESHOLD: ".concat(process.env.PROFIT_THRESHOLD, ", TRADE_AMOUNT: ").concat(process.env.TRADE_AMOUNT, ", TOKENS: ").concat(process.env.TOKENS, ", PROTOCOLS: ").concat(process.env.PROTOCOLS)); // Log env vars
         this.running = true;
         this.emit('started');
-        priceFeeds_js_1.PriceFeed.getInstance().subscribe(this.handlePrice);
+        this.logger.info('ArbitrageEngine started.'); // Added log
+        this.unsubscribePriceFeed = priceFeeds_js_1.PriceFeed.getInstance().subscribe(this.handlePrice);
+        if (this.unsubscribePriceFeed !== null) {
+            this.logger.info('Subscribed to PriceFeed.'); // Added log
+        }
+        else {
+            this.logger.error('Failed to subscribe to PriceFeed.'); // Added log
+        }
     };
     ArbitrageEngine.prototype.stop = function () {
         if (!this.running)
             return;
         this.running = false;
         this.emit('stopped');
-        priceFeeds_js_1.PriceFeed.getInstance().unsubscribe(this.handlePrice);
+        if (this.unsubscribePriceFeed) {
+            this.unsubscribePriceFeed();
+            this.unsubscribePriceFeed = null;
+        }
     };
     ArbitrageEngine.prototype.isRunning = function () {
         return this.running;

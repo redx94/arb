@@ -65,6 +65,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PriceFeed = void 0;
 var axios_1 = require("axios");
 var events_1 = require("events");
+var monitoring_js_1 = require("./monitoring.js");
 var PriceFeed = /** @class */ (function (_super) {
     __extends(PriceFeed, _super);
     function PriceFeed() {
@@ -74,6 +75,7 @@ var PriceFeed = /** @class */ (function (_super) {
         _this.mockData = [];
         _this.apiKey = process.env.COINGECKO_API_KEY || null;
         _this.apiBaseUrl = 'https://api.coingecko.com/api/v3';
+        _this.logger = monitoring_js_1.Logger.getInstance();
         return _this;
     }
     PriceFeed.getInstance = function () {
@@ -114,27 +116,29 @@ var PriceFeed = /** @class */ (function (_super) {
     };
     PriceFeed.prototype.getCurrentPrice = function (platform) {
         return __awaiter(this, void 0, void 0, function () {
-            var apiUrl, response, errorMessage, data, price, error_1;
+            var apiUrl, response, errorMessage, price, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        apiUrl = this.getApiUrl('/simple/price', { ids: 'ethereum', vs_currencies: 'usd' });
+                        apiUrl = this.getApiUrl("/coins/ethereum", { vs_currency: 'usd' });
                         console.log("Fetching price from CoinGecko API for ".concat(platform, ":"), apiUrl);
+                        this.logger.info("Fetching price from CoinGecko API for ".concat(platform, ": ").concat(apiUrl));
                         return [4 /*yield*/, axios_1.default.get(apiUrl, {
                             // Future: Authentication headers can be added here if needed.
                             })];
                     case 1:
                         response = _a.sent();
                         console.log('CoinGecko API response:', response.data);
-                        if (!response.data || !response.data.ethereum || !response.data.ethereum.usd) {
+                        this.logger.info("CoinGecko API response for ".concat(platform, ": ").concat(JSON.stringify(response.data)));
+                        if (!response.data || !response.data.market_data || !response.data.market_data.current_price || !response.data.market_data.current_price.usd) {
                             errorMessage = 'Invalid response format from CoinGecko API';
                             console.error(errorMessage, 'Response data:', response.data);
-                            this.emit('error', errorMessage, response.data);
+                            this.logger.error(errorMessage, response.data);
+                            console.error(errorMessage, 'Response data:', response.data);
                             return [2 /*return*/, null];
                         }
-                        data = response.data.ethereum;
-                        price = data.usd;
+                        price = Number(Math.round(response.data.market_data.current_price.usd));
                         return [2 /*return*/, {
                                 token: 'ETH',
                                 price: price,
@@ -184,6 +188,14 @@ var PriceFeed = /** @class */ (function (_super) {
                         return [2 /*return*/, null];
                     case 3: return [2 /*return*/];
                 }
+            });
+        });
+    };
+    PriceFeed.prototype.getDexLiquidity = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                // Mock liquidity value for now
+                return [2 /*return*/, 1000000];
             });
         });
     };

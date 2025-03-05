@@ -37,7 +37,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GasAwareFlashLoanProvider = void 0;
-var ethers_1 = require("ethers");
+var ethers = require("ethers");
+var Wallet = ethers.Wallet, parseEther = ethers.parseEther, formatEther = ethers.formatEther, JsonRpcProvider = ethers.JsonRpcProvider;
 var GasOptimizer_js_1 = require("./GasOptimizer.js");
 var monitoring_js_1 = require("../monitoring.js");
 var aaveIntegration_js_1 = require("../protocols/aaveIntegration.js");
@@ -54,7 +55,7 @@ var GasAwareFlashLoanProvider = /** @class */ (function () {
                 switch (_a.label) {
                     case 0:
                         _a.trys.push([0, 2, , 3]);
-                        expectedProfit = ethers_1.ethers.parseEther(params.expectedProfit);
+                        expectedProfit = ethers.parseEther(params.expectedProfit);
                         return [4 /*yield*/, this.gasOptimizer.calculateOptimalGasStrategy(expectedProfit, this.determineComplexity(params))];
                     case 1:
                         gasStrategy = _a.sent();
@@ -83,12 +84,12 @@ var GasAwareFlashLoanProvider = /** @class */ (function () {
         });
     };
     GasAwareFlashLoanProvider.prototype.determineComplexity = function (params) {
-        var amount = ethers_1.ethers.parseEther(params.amount);
+        var amount = ethers.parseEther(params.amount);
         // Determine complexity using native BigInt comparisons
-        if (amount > ethers_1.ethers.parseEther('1000')) {
+        if (amount > ethers.parseEther('1000')) {
             return 'high';
         }
-        if (amount > ethers_1.ethers.parseEther('100')) {
+        if (amount > ethers.parseEther('100')) {
             return 'medium';
         }
         return 'low';
@@ -99,7 +100,7 @@ var GasAwareFlashLoanProvider = /** @class */ (function () {
         }
         if (profitMargin < this.MIN_PROFIT_THRESHOLD) {
             var requiredProfitIncrease = Number(expectedProfit) * (this.MIN_PROFIT_THRESHOLD - profitMargin);
-            return "Profit margin too low. Need additional $".concat(ethers_1.ethers.formatEther(requiredProfitIncrease), " in profit for viability.");
+            return "Profit margin too low. Need additional $".concat(formatEther(requiredProfitIncrease), " in profit for viability.");
         }
         return 'Consider batching multiple operations to share gas costs.';
     };
@@ -116,13 +117,13 @@ var GasAwareFlashLoanProvider = /** @class */ (function () {
                         _a.trys.push([0, 3, , 4]);
                         return [4 /*yield*/, Promise.all(operations.map(function (op) { return __awaiter(_this, void 0, void 0, function () {
                                 return __generator(this, function (_a) {
-                                    return [2 /*return*/, this.gasOptimizer.calculateOptimalGasStrategy(ethers_1.ethers.parseEther(op.expectedProfit), this.determineComplexity(op))];
+                                    return [2 /*return*/, this.gasOptimizer.calculateOptimalGasStrategy(ethers.parseEther(op.expectedProfit), this.determineComplexity(op))];
                                 });
                             }); }))];
                     case 1:
                         individualGasEstimates = _a.sent();
                         totalIndividualGas = individualGasEstimates.reduce(function (sum, strategy) { return sum + BigInt(strategy.gasLimit); }, BigInt(0));
-                        return [4 /*yield*/, this.gasOptimizer.calculateOptimalGasStrategy(ethers_1.ethers.parseEther(operations[0].expectedProfit), this.determineComplexity(operations[0]))];
+                        return [4 /*yield*/, this.gasOptimizer.calculateOptimalGasStrategy(ethers.parseEther(operations[0].expectedProfit), this.determineComplexity(operations[0]))];
                     case 2:
                         batchedGasStrategy = _a.sent();
                         savings = totalIndividualGas - BigInt(batchedGasStrategy.gasLimit);
@@ -150,14 +151,15 @@ var GasAwareFlashLoanProvider = /** @class */ (function () {
                         providerUrl = process.env.PROVIDER_URL;
                         flashLoanContractAddress = process.env.FLASH_LOAN_CONTRACT_ADDRESS;
                         privateKey = process.env.PRIVATE_KEY;
+                        logger.info("Executing flash loan: token=".concat(params.token, ", amount=").concat(params.amount, ", protocol=").concat(params.protocol));
                         if (!providerUrl || !flashLoanContractAddress || !privateKey) {
+                            logger.error("Missing configuration: providerUrl=".concat(providerUrl, ", flashLoanContractAddress=").concat(flashLoanContractAddress, ", privateKey=").concat(privateKey));
                             throw new Error('Missing provider URL, flash loan contract address, or private key');
                         }
-                        provider = new ethers_1.ethers.JsonRpcProvider(providerUrl);
-                        wallet = new ethers_1.ethers.Wallet(privateKey, provider);
+                        provider = new ethers.JsonRpcProvider(providerUrl);
+                        wallet = new ethers.Wallet(privateKey, provider);
                         aaveIntegration = new aaveIntegration_js_1.AaveIntegration();
-                        return [4 /*yield*/, aaveIntegration.executeFlashLoan(params.token, params.amount, wallet.address, // Use the wallet address as the receiver
-                            '' // Replace with the actual parameters for the flash loan
+                        return [4 /*yield*/, aaveIntegration.executeFlashLoan(params.token, params.amount, wallet.address // Use the wallet address as the receiver
                             )];
                     case 1:
                         result = _a.sent();

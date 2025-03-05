@@ -38,12 +38,25 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.walletManager = void 0;
 var ethers_1 = require("ethers");
+var monitoring_js_1 = require("./monitoring.js");
 var WalletManager = /** @class */ (function () {
     function WalletManager() {
         this.wallets = new Map();
-        this.mockMode = false; // Default to mock mode for development
-        // Use mock provider for development
-        this.provider = new ethers_1.ethers.JsonRpcProvider('http://localhost:8545');
+        this.mockMode = false; // Default to live mode for production
+        this.logger = monitoring_js_1.Logger.getInstance();
+        if (process.env.PROVIDER_URL) {
+            try {
+                this.provider = new ethers_1.ethers.JsonRpcProvider(process.env.PROVIDER_URL);
+            }
+            catch (error) {
+                console.warn('Failed to set provider from PROVIDER_URL, using mock provider for development');
+                this.provider = new ethers_1.ethers.JsonRpcProvider('http://localhost:8545');
+            }
+        }
+        else {
+            // Default to mock provider if PROVIDER_URL is not set
+            this.provider = new ethers_1.ethers.JsonRpcProvider('http://localhost:8545');
+        }
     }
     WalletManager.prototype.setProvider = function (rpcUrl, apiKey) {
         try {
@@ -143,13 +156,11 @@ var WalletManager = /** @class */ (function () {
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
+                        _b.trys.push([0, 4, , 5]);
                         wallet = this.wallets.get(from);
                         if (!wallet) {
                             throw new Error('Wallet not found');
                         }
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, 5, , 6]);
                         if (this.mockMode) {
                             // Generate mock transaction
                             return [2 /*return*/, {
@@ -165,10 +176,10 @@ var WalletManager = /** @class */ (function () {
                                 }];
                         }
                         return [4 /*yield*/, this.provider.getTransactionCount(from)];
-                    case 2:
+                    case 1:
                         nonce = _b.sent();
                         return [4 /*yield*/, this.provider.getFeeData()];
-                    case 3:
+                    case 2:
                         gasPrice = _b.sent();
                         tx = {
                             hash: '',
@@ -183,29 +194,15 @@ var WalletManager = /** @class */ (function () {
                         };
                         signer = new ethers_1.ethers.Wallet(wallet.privateKey, this.provider);
                         return [4 /*yield*/, signer.signTransaction(tx)];
-                    case 4:
+                    case 3:
                         signedTx = _b.sent();
-                        tx.hash = ethers_1.ethers.keccak256(signedTx);
+                        tx.hash = ethers_1.ethers.keccak256(tx);
                         return [2 /*return*/, tx];
-                    case 5:
+                    case 4:
                         error_2 = _b.sent();
-                        if (this.mockMode) {
-                            // Return mock transaction on error in mock mode
-                            return [2 /*return*/, {
-                                    hash: this.generateMockHash(),
-                                    from: from,
-                                    to: to,
-                                    value: value,
-                                    gasPrice: '20000000000',
-                                    gasLimit: '21000',
-                                    nonce: 0,
-                                    data: data,
-                                    chainId: wallet.chainId
-                                }];
-                        }
-                        console.warn('Error signing transaction:', error_2);
+                        console.warn('Error signing transaction:', error_2 instanceof Error ? error_2 : new Error(String(error_2)));
                         throw new Error('Failed to sign transaction');
-                    case 6: return [2 /*return*/];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
@@ -216,33 +213,30 @@ var WalletManager = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
+                        _a.trys.push([0, 3, , 4]);
                         if (this.mockMode) {
                             // Simulate successful transaction in mock mode
                             return [2 /*return*/, this.generateMockHash()];
                         }
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 4, , 5]);
+                        this.logger.info("Sending transaction: from=".concat(tx.from, ", to=").concat(tx.to, ", value=").concat(tx.value));
                         wallet = this.wallets.get(tx.from);
                         if (!wallet) {
+                            this.logger.error("Wallet not found: address=".concat(tx.from));
                             throw new Error('Wallet not found');
                         }
                         signer = new ethers_1.ethers.Wallet(wallet.privateKey, this.provider);
                         return [4 /*yield*/, signer.sendTransaction(tx)];
-                    case 2:
+                    case 1:
                         response = _a.sent();
                         return [4 /*yield*/, response.wait()];
-                    case 3:
+                    case 2:
                         _a.sent();
                         return [2 /*return*/, response.hash];
-                    case 4:
+                    case 3:
                         error_3 = _a.sent();
-                        if (this.mockMode) {
-                            return [2 /*return*/, this.generateMockHash()];
-                        }
-                        console.error('Transaction failed:', error_3);
-                        throw error_3;
-                    case 5: return [2 /*return*/];
+                        console.warn('Error sending transaction:', error_3 instanceof Error ? error_3 : new Error(String(error_3)));
+                        throw new Error('Failed to send transaction');
+                    case 4: return [2 /*return*/];
                 }
             });
         });
@@ -255,7 +249,9 @@ var WalletManager = /** @class */ (function () {
     };
     return WalletManager;
 }());
-exports.walletManager = new WalletManager();
+var walletManager = new WalletManager();
+exports.walletManager = walletManager;
 // Initialize with mock mode for development
-// walletManager.setMockMode(true);
-// walletManager.setProvider('http://localhost:8545');
+if (process.env.PROVIDER_URL) {
+    walletManager.setProvider(process.env.PROVIDER_URL);
+}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { GasOptimizationMetrics } from '../GasOptimizationMetrics';
+import { GasOptimizationMetrics } from '../GasOptimizationMetrics.js';
 
 export const SystemOptimizationDashboard: React.FC = () => {
   return (

@@ -1,5 +1,5 @@
 import React from 'react';
-import type { PriceData } from '../../types';
+import type { PriceData } from '../../types/index.ts';
 
 interface Props {
   opportunities: PriceData[];

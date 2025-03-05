@@ -20,10 +20,10 @@ interface GasStrategy {
 export class GasOptimizer {
   private static instance: GasOptimizer;
   private readonly gasHistory: CacheManager<GasHistory>;
-  private readonly HISTORY_WINDOW = parseInt(process.env.GAS_HISTORY_WINDOW || '1000');
-  private readonly MIN_PROFIT_MARGIN = parseFloat(process.env.GAS_MIN_PROFIT_MARGIN || '0.02');
-  private readonly MAX_PRIORITY_FEE = BigInt(process.env.GAS_MAX_PRIORITY_FEE || '3000000000'); // 3 gwei
-  private readonly BASE_GAS_LIMIT = BigInt(process.env.GAS_BASE_GAS_LIMIT || '300000');
+  private readonly HISTORY_WINDOW = parseInt(process.env.GAS_HISTORY_WINDOW || '1000'); // Default: 1000 blocks
+  private readonly MIN_PROFIT_MARGIN = parseFloat(process.env.GAS_MIN_PROFIT_MARGIN || '0.02'); // Default: 0.02 (2%)
+  private readonly MAX_PRIORITY_FEE = BigInt(process.env.GAS_MAX_PRIORITY_FEE || '3000000000'); // Default: 3 gwei
+  private readonly BASE_GAS_LIMIT = BigInt(process.env.GAS_BASE_GAS_LIMIT || '300000'); // Default: 300000
 
   private constructor() {
     this.gasHistory = new CacheManager<GasHistory>({ ttl: 3600000 });

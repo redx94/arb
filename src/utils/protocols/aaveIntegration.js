@@ -38,8 +38,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AaveIntegration = void 0;
 var ethers_1 = require("ethers");
-var monitoring_1 = require("../monitoring");
-var logger = monitoring_1.Logger.getInstance();
+var monitoring_js_1 = require("../monitoring.js");
+var logger = monitoring_js_1.Logger.getInstance();
 var AaveIntegration = /** @class */ (function () {
     function AaveIntegration() {
     }
@@ -69,7 +69,7 @@ var AaveIntegration = /** @class */ (function () {
             });
         });
     };
-    AaveIntegration.prototype.executeFlashLoan = function (token, amount, receiver, params) {
+    AaveIntegration.prototype.executeFlashLoan = function (token, amount, receiver) {
         return __awaiter(this, void 0, void 0, function () {
             var providerUrl, privateKey, aavePoolAddress, provider, wallet, aavePool, assets, amounts, referralCode, initiator, tx, error_1;
             return __generator(this, function (_a) {
@@ -78,8 +78,10 @@ var AaveIntegration = /** @class */ (function () {
                         _a.trys.push([0, 3, , 4]);
                         providerUrl = process.env.PROVIDER_URL;
                         privateKey = process.env.PRIVATE_KEY;
-                        aavePoolAddress = '0x794a61358D6845594F94dc1DB027E1266356b045';
+                        aavePoolAddress = process.env.AAVE_POOL_ADDRESS;
+                        logger.info("Executing Aave flash loan: token=".concat(token, ", amount=").concat(amount, ", receiver=").concat(receiver));
                         if (!providerUrl || !privateKey || !aavePoolAddress) {
+                            logger.error("Missing configuration: providerUrl=".concat(providerUrl, ", privateKey=").concat(privateKey, ", aavePoolAddress=").concat(aavePoolAddress));
                             throw new Error('Missing provider URL, private key, or Aave Pool address');
                         }
                         provider = new ethers_1.ethers.JsonRpcProvider(providerUrl);
@@ -105,8 +107,7 @@ var AaveIntegration = /** @class */ (function () {
                         logger.error('Aave flash loan execution failed:', error_1, {
                             token: token,
                             amount: amount,
-                            receiver: receiver,
-                            params: params,
+                            receiver: receiver
                         });
                         console.error('Aave flash loan execution failed:', error_1.message);
                         return [2 /*return*/, { success: false, error: error_1.message }];

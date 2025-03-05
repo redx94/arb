@@ -42,10 +42,10 @@ var cacheManager_js_1 = require("../cache/cacheManager.js");
 var index_js_1 = require("../config/index.js");
 var GasOptimizer = /** @class */ (function () {
     function GasOptimizer() {
-        this.HISTORY_WINDOW = parseInt(process.env.GAS_HISTORY_WINDOW || '1000');
-        this.MIN_PROFIT_MARGIN = parseFloat(process.env.GAS_MIN_PROFIT_MARGIN || '0.02');
-        this.MAX_PRIORITY_FEE = BigInt(process.env.GAS_MAX_PRIORITY_FEE || '3000000000'); // 3 gwei
-        this.BASE_GAS_LIMIT = BigInt(process.env.GAS_BASE_GAS_LIMIT || '300000');
+        this.HISTORY_WINDOW = parseInt(process.env.GAS_HISTORY_WINDOW || '1000'); // Default: 1000 blocks
+        this.MIN_PROFIT_MARGIN = parseFloat(process.env.GAS_MIN_PROFIT_MARGIN || '0.02'); // Default: 0.02 (2%)
+        this.MAX_PRIORITY_FEE = BigInt(process.env.GAS_MAX_PRIORITY_FEE || '3000000000'); // Default: 3 gwei
+        this.BASE_GAS_LIMIT = BigInt(process.env.GAS_BASE_GAS_LIMIT || '300000'); // Default: 300000
         this.gasHistory = new cacheManager_js_1.CacheManager({ ttl: 3600000 });
         this.startGasMonitoring();
     }

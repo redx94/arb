@@ -8,10 +8,11 @@
     "compile": "truffle compile",
     "migrate": "truffle migrate",
     "test": "vitest",
-    "dev": "vite",
+    "dev": "node_modules/.bin/vite",
     "build": "vite build src/main.tsx",
     "build:backend": "tsc -p tsconfig.json",
-    "build:server": "tsc -p tsconfig.json"
+    "build:server": "tsc -p tsconfig.json",
+    "start-arbitrage": "node build/run-arbitrage.mjs"
   },
   "author": "Reece Dixon",
   "license": "MIT",
@@ -34,7 +35,8 @@
     "web3": "^4.16.0"
   },
   "devDependencies": {
-    "@types/node": "^22.13.8",
+    "@types/lodash": "^4.17.16",
+    "@types/node": "^22.13.9",
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
@@ -43,7 +45,7 @@
     "lucide-react": "^0.300.0",
     "recharts": "^2.15.1",
     "ts-node": "10.9.2",
-    "typescript": "5.4.5",
+    "typescript": "^5.4.5",
     "vite": "^6.2.0",
     "vitest": "^3.0.7",
     "zustand": "^5.0.3"

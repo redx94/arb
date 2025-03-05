@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import { GelatoRelay } from '@gelatonetwork/relay-sdk';
 
 export interface FlashLoanParams {
   amount: string;
@@ -108,31 +109,41 @@ export class FlashLoanHandler {
   private async sendFlashLoanTransaction(params: FlashLoanParams): Promise<string> {
     try {
       const provider = new ethers.JsonRpcProvider(process.env.PROVIDER_URL);
-      const wallet = new ethers.Wallet(process.env.PRIVATE_KEY as string, provider);
+      const relay = new GelatoRelay();
+      const wallet = new ethers.Wallet(process.env.PRIVATE_KEY as string, provider); // Keep wallet for contract interaction
 
       const flashLoanContract = new ethers.Contract(
         this.FLASH_LOAN_CONTRACT_ADDRESS,
         [
           'function executeOperation(address[] calldata assets, uint256[] calldata amounts, uint256 premium, address initiator, bytes calldata params) external returns (bool)'
         ],
-        wallet
+        provider // Use provider instead of wallet for contract read
       );
 
-      // Replace with actual parameters for the flash loan
+      // Prepare transaction data
       const assets = [params.token];
       const amounts = [ethers.parseUnits(params.amount, 18)];
-      const premium = ethers.parseUnits('0', 18); // No premium for simulation
+      const premium = ethers.parseUnits('0', 18);
       const initiator = wallet.address;
       const loanParams = ethers.toUtf8Bytes('');
+      const data = flashLoanContract.interface.encodeFunctionData('executeOperation', [assets, amounts, premium, initiator, loanParams]);
 
-      const tx = await flashLoanContract.executeOperation(assets, amounts, premium, initiator, loanParams, {
-        gasLimit: 1000000, // Adjust gas limit as needed
-      });
+      const relayResponse = await relay.relayWithSyncFee(
+        {
+          target: this.FLASH_LOAN_CONTRACT_ADDRESS,
+          data: data,
+          chainId: (await provider.getNetwork()).chainId, // Or chainId you are working on
+        },
+        provider
+      );
 
-      await tx.wait();
-      return tx.hash;
+      if (!relayResponse) {
+        throw new Error("Gelato Relay transaction failed");
+      }
+
+      return relayResponse.taskId; // Return Gelato Task ID instead of tx hash
     } catch (error) {
-      throw new Error(`Transaction failed: ${(error as Error).message}`);
+      throw new Error(`Gelato Relay transaction failed: ${(error as Error).message}`);
     }
   }
 

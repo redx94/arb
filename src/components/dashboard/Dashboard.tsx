@@ -1,8 +1,8 @@
-import React, { useState, useEffect, Dispatch, SetStateAction } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArbitrageVisualizer } from '../ArbitrageVisualizer.js';
 import { ArbitrageOpportunities } from './ArbitrageOpportunities.js';
 import { TradeHistory } from './TradeHistory.js';
-import { PriceData, TradeDetails } from '../../types/index.js';
+import { PriceData, TradeDetails } from '../../types/index.ts';
 import { ArbitrageEngine } from '../../utils/arbitrage/arbitrageEngine.js';
 
 interface DashboardProps {

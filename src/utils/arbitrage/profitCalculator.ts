@@ -8,7 +8,7 @@ const getRandomChange = () => (Math.random() - 0.5) * 0.1; // -5% to +5%
 export class ProfitCalculator {
     GAS_PRICE_BUFFER = 1.2; // 20% buffer for gas price fluctuations
     FLASH_LOAN_FEE = 0.0009; // 0.09% flash loan fee
-    MIN_PROFIT_THRESHOLD = Number('0.01'); // 0.01 ETH
+    MIN_PROFIT_THRESHOLD = 0.01; // 0.01 ETH
 
     private static instance: ProfitCalculator;
     private constructor() { }
@@ -20,28 +20,21 @@ export class ProfitCalculator {
         return ProfitCalculator.instance;
     }
 
-    async calculatePotentialProfit(buyPrice: number, sellPrice: number, amount: number, _priceData?: any): Promise<{ profit: number, isViable: boolean, details: any }> {
+    async calculatePotentialProfit(buyPrice: bigint, sellPrice: bigint, amount: bigint, _priceData?: any): Promise<{ profit: number, isViable: boolean, details: any }> {
         try {
-            const amountBN: number = Number(amount.toString());
-            const buyPriceBN: number = Number(buyPrice.toString());
-            const sellPriceBN: number = Number(sellPrice.toString());
+            const grossProfit: bigint = (amount * (sellPrice - buyPrice));
 
-            const grossProfit: number = (amountBN * (sellPriceBN - buyPriceBN));
-
-            const { flashLoanCost, gasCost, slippageCost } = await this.calculateCosts(amountBN, buyPriceBN, _priceData);
-            const totalCosts: number = gasCost + flashLoanCost + slippageCost;
-            const netProfit: number = grossProfit - totalCosts;
-
-            const netProfitBN = ethers.BigNumber.from(netProfit);
-            const minProfitThresholdBN = ethers.BigNumber.from(this.MIN_PROFIT_THRESHOLD);
+            const { flashLoanCost, gasCost, slippageCost } = await this.calculateCosts(amount, buyPrice, _priceData);
+            const totalCosts: bigint = flashLoanCost + gasCost + slippageCost;
+            const netProfit: bigint = grossProfit - totalCosts;
 
             console.log('grossProfit:', grossProfit.toString());
             console.log('totalCosts:', totalCosts.toString());
-            console.log('netProfit:', netProfitBN.toString());
+            console.log('netProfit:', netProfit.toString());
 
             return {
-                profit: Number(netProfitBN),
-                isViable: netProfitBN > minProfitThresholdBN,
+                profit: Number(netProfit),
+                isViable: Number(netProfit) > this.MIN_PROFIT_THRESHOLD,
                 details: {
                     grossProfit,
                     totalCosts,
@@ -58,12 +51,12 @@ export class ProfitCalculator {
         }
     }
 
-async calculateCosts(amount: number, price: number, _priceData?: any): Promise<{ flashLoanCost: number, gasCost: number, slippageCost: number }> {
-        const flashLoanCost = (amount * price * Number(this.FLASH_LOAN_FEE));
+async calculateCosts(amount: bigint, price: bigint, _priceData?: any): Promise<{ flashLoanCost: bigint, gasCost: bigint, slippageCost: bigint }> {
+        const flashLoanCost = BigInt(Math.round(Number(amount * price) * this.FLASH_LOAN_FEE));
         const estimatedGasUnits = 250000n;
         const gasPrice = await this.getGasPrice();
-        const gasCost = Number(gasPrice) * Number(estimatedGasUnits);
-        const slippageCost = this.calculateSlippageCost(amount, price, _priceData);
+        const gasCost = BigInt(Math.round(Number(gasPrice) * Number(estimatedGasUnits)));
+        const slippageCost = BigInt(Math.round(await this.calculateSlippageCost(Number(amount), Number(price), _priceData)));
 
         return {
             flashLoanCost,
@@ -73,16 +66,41 @@ async calculateCosts(amount: number, price: number, _priceData?: any): Promise<{
     }
 
     async getGasPrice(): Promise<any> {
-        const provider = new ethers.providers.JsonRpcProvider(process.env.PROVIDER_URL);
-        const feeData = await provider.getFeeData();
-        const gasPrice: any = feeData.maxFeePerGas || feeData.gasPrice || Number('10');
-        return gasPrice;
+        try {
+            const response = await fetch(process.env.PROVIDER_URL as string, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    jsonrpc: '2.0',
+                    method: 'eth_gasPrice',
+                    params: [],
+                    id: 1
+                })
+            });
+            const data = await response.json();
+            const gasPrice = parseInt(data.result, 16);
+            if (isNaN(gasPrice)) {
+                logger.error('Invalid gas price received, using default gas price.');
+                return 10; // Default gas price
+            }
+            return gasPrice;
+        } catch (error: any) {
+            logger.error('Failed to fetch gas price:', error instanceof Error ? error : new Error(String(error)));
+            return 10; // Default gas price
+        }
     }
 
-calculateSlippageCost(amount: number, price: number, _priceData?: any): any {
+async calculateSlippageCost(amount: number, price: number, _priceData?: any): Promise<number> {
         // Calculate slippage based on order size and liquidity
         const baseSlippage = 0.001; // 0.1% base slippage
-const volumeSlippage = ((Number(amount))*(Number(price)))/(1000); // Additional slippage based on volume
+        const priceFeed = PriceFeed.getInstance();
+        const dexLiquidity = await priceFeed.getDexLiquidity();
+        const volumeSlippage = ((Number(amount))*(Number(price)))/(dexLiquidity); // Additional slippage based on volume
         return ((Number(amount))*(Number(price)))*(0.001 + (volumeSlippage))/(1);
+    } catch (error: any) {
+        logger.error('Failed to calculate slippage cost:', error instanceof Error ? error : new Error(String(error)));
+        return 0; // Default slippage cost
     }
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import type { PriceData } from '../types';
+import type { PriceData } from '../types/index.js';
 
 interface Props {
   latestPrice?: PriceData;

@@ -1,14 +1,26 @@
 import { ethers } from 'ethers';
 import type { Wallet, Transaction } from '../types/index.js';
 
+import { Logger } from './monitoring.js';
+
 class WalletManager {
   private wallets: Map<string, Wallet> = new Map();
   public provider: ethers.JsonRpcProvider;
-    private mockMode: boolean = true; // Default to mock mode for development
+  private mockMode: boolean = false; // Default to live mode for production
+  private logger = Logger.getInstance();
 
   constructor() {
-    // Use mock provider for development
-    this.provider = new ethers.JsonRpcProvider('http://localhost:8545');
+    if (process.env.PROVIDER_URL) {
+      try {
+        this.provider = new ethers.JsonRpcProvider(process.env.PROVIDER_URL);
+      } catch (error) {
+        console.warn('Failed to set provider from PROVIDER_URL, using mock provider for development');
+        this.provider = new ethers.JsonRpcProvider('http://localhost:8545');
+      }
+    } else {
+      // Default to mock provider if PROVIDER_URL is not set
+      this.provider = new ethers.JsonRpcProvider('http://localhost:8545');
+    }
   }
 
   public setProvider(rpcUrl: string, apiKey?: string) {
@@ -94,12 +106,12 @@ class WalletManager {
     value: string,
     data?: string
   ): Promise<Transaction> {
-    const wallet = this.wallets.get(from);
-    if (!wallet) {
-      throw new Error('Wallet not found');
-    }
-
     try {
+      const wallet = this.wallets.get(from);
+      if (!wallet) {
+        throw new Error('Wallet not found');
+      }
+
       if (this.mockMode) {
         // Generate mock transaction
         return {
@@ -132,52 +144,37 @@ class WalletManager {
 
       const signer = new ethers.Wallet(wallet.privateKey, this.provider);
       const signedTx = await signer.signTransaction(tx);
-      tx.hash = ethers.keccak256(signedTx);
+      tx.hash = ethers.keccak256(tx);
 
       return tx;
-    } catch (error) {
-      if (this.mockMode) {
-        // Return mock transaction on error in mock mode
-        return {
-          hash: this.generateMockHash(),
-          from,
-          to,
-          value,
-          gasPrice: '20000000000',
-          gasLimit: '21000',
-          nonce: 0,
-          data,
-          chainId: wallet.chainId
-        };
-      }
-      console.warn('Error signing transaction:', error);
+    } catch (error: any) {
+      console.warn('Error signing transaction:', error instanceof Error ? error : new Error(String(error)));
       throw new Error('Failed to sign transaction');
     }
   }
 
   public async sendTransaction(tx: Transaction): Promise<string> {
-    if (this.mockMode) {
-      // Simulate successful transaction in mock mode
-      return this.generateMockHash();
-    }
-
     try {
+      if (this.mockMode) {
+        // Simulate successful transaction in mock mode
+        return this.generateMockHash();
+      }
+
+      this.logger.info(`Sending transaction: from=${tx.from}, to=${tx.to}, value=${tx.value}`);
       const wallet = this.wallets.get(tx.from);
       if (!wallet) {
+        this.logger.error(`Wallet not found: address=${tx.from}`);
         throw new Error('Wallet not found');
       }
 
       const signer = new ethers.Wallet(wallet.privateKey, this.provider);
       const response = await signer.sendTransaction(tx);
       await response.wait();
-      
+
       return response.hash;
-    } catch (error) {
-      if (this.mockMode) {
-        return this.generateMockHash();
-      }
-      console.error('Transaction failed:', error);
-      throw error;
+    } catch (error: any) {
+      console.warn('Error sending transaction:', error instanceof Error ? error : new Error(String(error)));
+      throw new Error('Failed to send transaction');
     }
   }
 
@@ -190,8 +187,11 @@ class WalletManager {
   }
 }
 
-export const walletManager = new WalletManager();
+const walletManager = new WalletManager();
 
 // Initialize with mock mode for development
-// walletManager.setMockMode(true);
-// walletManager.setProvider('http://localhost:8545');
+if (process.env.PROVIDER_URL) {
+  walletManager.setProvider(process.env.PROVIDER_URL);
+}
+
+export { walletManager };

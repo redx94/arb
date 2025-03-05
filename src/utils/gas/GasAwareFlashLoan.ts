@@ -1,7 +1,8 @@
-import { ethers } from 'ethers';
-import { GasOptimizer } from './GasOptimizer';
+import * as ethers from 'ethers';
+const { Wallet, parseEther, formatEther, JsonRpcProvider } = ethers;
+import { GasOptimizer } from './GasOptimizer.js';
 import { Logger } from '../monitoring.js';
-import type { FlashLoanParams } from '../flashLoanHandler.js';
+import type { FlashLoanParams } from '../../types/index.js';
 import { AaveIntegration } from '../protocols/aaveIntegration.js';
 
 const logger = Logger.getInstance();
@@ -87,7 +88,7 @@ export class GasAwareFlashLoanProvider {
     if (profitMargin < this.MIN_PROFIT_THRESHOLD) {
       const requiredProfitIncrease =
         Number(expectedProfit) * (this.MIN_PROFIT_THRESHOLD - profitMargin);
-      return `Profit margin too low. Need additional $${ethers.formatEther(requiredProfitIncrease)} in profit for viability.`;
+      return `Profit margin too low. Need additional $${formatEther(requiredProfitIncrease)} in profit for viability.`;
     }
 
     return 'Consider batching multiple operations to share gas costs.';
@@ -145,7 +146,10 @@ export class GasAwareFlashLoanProvider {
       const flashLoanContractAddress = process.env.FLASH_LOAN_CONTRACT_ADDRESS;
       const privateKey = process.env.PRIVATE_KEY;
 
+      logger.info(`Executing flash loan: token=${params.token}, amount=${params.amount}, protocol=${params.protocol}`);
+
       if (!providerUrl || !flashLoanContractAddress || !privateKey) {
+        logger.error(`Missing configuration: providerUrl=${providerUrl}, flashLoanContractAddress=${flashLoanContractAddress}, privateKey=${privateKey}`);
         throw new Error('Missing provider URL, flash loan contract address, or private key');
       }
 
@@ -155,8 +159,7 @@ export class GasAwareFlashLoanProvider {
       const result = await aaveIntegration.executeFlashLoan(
         params.token,
         params.amount,
-        wallet.address, // Use the wallet address as the receiver
-        '' // Replace with the actual parameters for the flash loan
+        wallet.address // Use the wallet address as the receiver
       );
 
       if (result.success) {
