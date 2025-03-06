@@ -8,21 +8,36 @@ import {IPool} from "@aave/core-v3/contracts/interfaces/IPool.sol";
 import {IUniswapV2Router02} from './interfaces/IUniswapV2Router02.sol';
 import {IUniswapV2Pair} from './interfaces/IUniswapV2Pair.sol'; // Import Uniswap Pair interface
 import {AggregatorV3Interface} from "node_modules/@chainlink/contracts/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import { Ownable } from "node_modules/@openzeppelin/contracts/access/Ownable.sol";
 import { ReentrancyGuard } from "node_modules/@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "hardhat/console.sol";
 
-contract ArbTrader is FlashLoanReceiverBase, ReentrancyGuard {
+// Placeholder for Quantum-Resistant Encryption Library
+// In a real implementation, this would be replaced with a secure, verified library
+// For demonstration, we'll use a simple XOR encryption
+library QuantumEncryption {
+    function encrypt(uint256 data, uint256 key) internal pure returns (uint256) {
+        return data ^ key;
+    }
+
+    function decrypt(uint256 encryptedData, uint256 key) internal pure returns (uint256) {
+        return encryptedData ^ key;
+    }
+}
+
+contract ArbTrader is FlashLoanReceiverBase, ReentrancyGuard, Ownable {
+    using QuantumEncryption for uint256;
+
     address payable public owner;
 
     address public immutable UNISWAP_ROUTER;
     address public immutable SUSHISWAP_ROUTER;
     address public immutable WETH;
-    bool public ethArbOpportunity = false; // Flag for ETH arbitrage opportunity
-    string public ethTradeDirection; // ETH trade direction
-    uint256 public ethArbProfit; // To store ETH arbitrage profit
-    bool public btcArbOpportunity = false; // Flag for BTC arbitrage opportunity
-    string public btcTradeDirection; // BTC trade direction
-    uint256 public btcArbProfit; // To store BTC arbitrage profit
+
+    enum TradeDirection {
+        NONE,
+        BUY_UNISWAP_SELL_SUSHISWAP,
+        BUY_SUSHISWAP_SELL_UNISWAP
+    }
 
     // Chainlink Price Feed addresses
     AggregatorV3Interface internal ethUsdPriceFeed;
@@ -107,17 +122,21 @@ contract ArbTrader is FlashLoanReceiverBase, ReentrancyGuard {
         return price;
     }
 
+    uint256 public slippageTolerance = 50; // 0.5% default slippage tolerance
+
     function executeOperation(
         address[] calldata assets,
         uint256[] calldata amounts,
         uint256[] calldata premiums,
         address initiator,
-        bytes calldata params
+        bytes calldata params,
+        uint256 _slippageTolerance
     ) external override nonReentrant returns (bool) {
         // Input validation
         require(assets.length == 1, "Invalid assets length");
         require(amounts.length == 1, "Invalid amounts length");
         require(assets[0] != address(0), "Invalid asset address");
+        require(_slippageTolerance <= 10000, "Slippage tolerance must be less than or equal to 10000 (100%)");
 
         // 1. Get CEX price (Binance via Chainlink) - Keep CEX prices for comparison
         int256 ethPriceCex = getLatestEthPrice();
@@ -128,6 +147,26 @@ contract ArbTrader is FlashLoanReceiverBase, ReentrancyGuard {
         uint256 ethPriceDexSushiswap = getSushiswapPrice(WETH);
         uint256 btcPriceDexUniswap = getUniswapPrice(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599); // WBTC address
         uint256 btcPriceDexSushiswap = getSushiswapPrice(0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599); // WBTC address
+
+        // Check for price manipulation
+        uint256 ethPriceDeviationTolerance = 10; // 10% deviation
+        uint256 btcPriceDeviationTolerance = 10; // 10% deviation
+
+        require(ethPriceDexUniswap <= (uint256(ethPriceCex) * (100 + ethPriceDeviationTolerance)) / 100 &&
+                ethPriceDexUniswap >= (uint256(ethPriceCex) * (100 - ethPriceDeviationTolerance)) / 100,
+                "Uniswap ETH price deviation too high");
+
+        require(ethPriceDexSushiswap <= (uint256(ethPriceCex) * (100 + ethPriceDeviationTolerance)) / 100 &&
+                ethPriceDexSushiswap >= (uint256(ethPriceCex) * (100 - ethPriceDeviationTolerance)) / 100,
+                "Sushiswap ETH price deviation too high");
+
+        require(btcPriceDexUniswap <= (uint256(btcPriceCex) * (100 + btcPriceDeviationTolerance)) / 100 &&
+                btcPriceDexUniswap >= (uint256(btcPriceCex) * (100 - btcPriceDeviationTolerance)) / 100,
+                "Uniswap BTC price deviation too high");
+
+        require(btcPriceDexSushiswap <= (uint256(btcPriceCex) * (100 + btcPriceDeviationTolerance)) / 100 &&
+                btcPriceDexSushiswap >= (uint256(btcPriceCex) * (100 - btcPriceDeviationTolerance)) / 100,
+                "Sushiswap BTC price deviation too high");
 
         // 3. Determine arbitrage opportunity and trade direction for ETH
         if (ethPriceDexUniswap > ethPriceDexSushiswap) {
@@ -161,8 +200,29 @@ contract ArbTrader is FlashLoanReceiverBase, ReentrancyGuard {
 
 
         // 4. Execute DEX-to-DEX trade (Uniswap <-> Sushiswap)
-        if (ethArbOpportunity) {
-            if (keccak256(bytes(ethTradeDirection)) == keccak256(bytes("Buy Uniswap, Sell Sushiswap"))) {
+        TradeDirection ethTrade;
+        if (ethPriceDexUniswap > ethPriceDexSushiswap) {
+            ethTrade = TradeDirection.BUY_SUSHISWAP_SELL_UNISWAP;
+        } else if (ethPriceDexSushiswap > ethPriceDexUniswap) {
+            ethTrade = TradeDirection.BUY_UNISWAP_SELL_SUSHISWAP;
+        } else {
+            ethTrade = TradeDirection.NONE;
+        }
+
+        TradeDirection btcTrade;
+        if (btcPriceDexUniswap > btcPriceDexSushiswap) {
+            btcTrade = TradeDirection.BUY_SUSHISWAP_SELL_UNISWAP;
+        } else if (btcPriceDexSushiswap > btcPriceDexUniswap) {
+            btcTrade = TradeDirection.BUY_UNISWAP_SELL_SUSHISWAP;
+        } else {
+            btcTrade = TradeDirection.NONE;
+        }
+
+        uint256 ethArbProfit = 0;
+        uint256 btcArbProfit = 0;
+
+        if (ethTrade != TradeDirection.NONE) {
+            if (ethTrade == TradeDirection.BUY_UNISWAP_SELL_SUSHISWAP) {
                 // --- Buy on Uniswap, Sell Sushiswap ---
                 uint256 amountToSwap = amounts[0]; // Amount to swap (e.g., flashloaned amount)
                 address tokenToSwap = assets[0]; // Token to swap (e.g., flashloaned token)
@@ -177,110 +237,148 @@ contract ArbTrader is FlashLoanReceiverBase, ReentrancyGuard {
                 // Path for Sushiswap swap (WETH -> Token)
                 address[] memory pathSushiswap = new address[](2);
                 pathSushiswap[0] = wethAddress;
-                pathSushiswap[1] = tokenToSwap;
-
-
-                // Get Uniswap Router instance
-                IUniswapV2Router02 uniswapRouter = IUniswapV2Router02(UNISWAP_ROUTER);
-                // Get Sushiswap Router instance
-                IUniswapV2Router02 sushiswapRouter = IUniswapV2Router02(SUSHISWAP_ROUTER);
-
-
-                // Swap flashloaned tokens for WETH on Uniswap (Buy on Uniswap)
-                uniswapRouter.swapExactTokensForTokens(
-                    amounts[0],
-                    0, // minAmountOut
-                    pathUniswap,
-                    address(this), // to: this contract
-                    block.timestamp + 300 // deadline: 5 minutes
-                );
-
-                // Calculate expected WETH output and fee from Uniswap swap
-                uint256[] memory amountsOutFromUniswap = uniswapRouter.getAmountsOut(amounts[0], pathUniswap);
-                uint256 wethAmountFromUniswap = amountsOutFromUniswap[1];
-                uint256 uniswapSwapFee = (wethAmountFromUniswap * 3) / 1000; // 0.3% fee
-                uint256 wethAmountAfterUniswapFee = wethAmountFromUniswap - uniswapSwapFee;
-
-
-                // Swap WETH back to tokens on Sushiswap (Sell on Sushiswap)
-                sushiswapRouter.swapExactTokensForTokens(
-                    wethAmountAfterUniswapFee, // Swap WETH amount from Uniswap output
-                    0, // minAmountOut
-                    pathSushiswap,
-                    address(this), // to: this contract
-                    block.timestamp + 300 // deadline: 5 minutes
-                );
-
-                // Calculate profit
-                uint256 amountOut = sushiswapRouter.getAmountsOut(wethAmountAfterUniswapFee, pathSushiswap)[1]; // Get tokens back from Sushiswap
-                uint256 sushiswapSwapFee = (amountOut * 3) / 1000; // 0.3% fee
-                uint256 amountOutAfterFees = amountOut - sushiswapSwapFee;
-                ethArbProfit = amountOutAfterFees - initialAmount;
-                console.log("ETH Arbitrage Profit:", ethArbProfit);
-
-                // Return profit
-                return true;
-
-                // --- End Buy Uniswap, Sell Sushiswap ---
-            } else if (keccak256(bytes(ethTradeDirection)) == keccak256(bytes("Buy Sushiswap, Sell Uniswap"))) {
-                // --- Buy on Sushiswap, Sell Uniswap ---
-                uint256 amountToSwap = amounts[0]; // Amount to swap (e.g., flashloaned amount)
-                address tokenToSwap = assets[0]; // Token to swap (e.g., flashloaned token)
-                address wethAddress = WETH;
-                uint256 initialAmount = amounts[0]; // Store initial amount for profit calculation
-
-
-                // Path for Sushiswap swap (Token -> WETH)
-                address[] memory pathSushiswap = new address[](2);
-                pathSushiswap[0] = tokenToSwap;
-                pathSushiswap[1] = wethAddress;
-
-                // Path for Uniswap swap (WETH -> Token)
-                address[] memory pathUniswap = new address[](2);
-                pathUniswap[0] = wethAddress;
                 pathUniswap[1] = tokenToSwap;
 
 
-                // Get Sushiswap Router instance
-                IUniswapV2Router02 sushiswapRouter = IUniswapV2Router02(SUSHISWAP_ROUTER);
                 // Get Uniswap Router instance
                 IUniswapV2Router02 uniswapRouter = IUniswapV2Router02(UNISWAP_ROUTER);
+                // Get Sushiswap Router instance
+                IUniswapV2Router02 sushiswapRouter = IUniswapV2Router02(SUSHISWAP_ROUTER);
 
 
-                // Swap flashloaned tokens for WETH on Sushiswap (Buy on Sushiswap)
-                sushiswapRouter.swapExactTokensForTokens(
-                    amounts[0],
-                    0, // minAmountOut
-                    pathSushiswap,
-                    address(this), // to: this contract
-                    block.timestamp + 300 // deadline: 5 minutes
-                );
+                uint256 _currentSlippageTolerance = _slippageTolerance > 0 ? _slippageTolerance : slippageTolerance;
 
-                 // Calculate expected WETH output from Sushiswap swap
-                uint256[] memory amountsOutFromSushiswap = sushiswapRouter.getAmountsOut(amounts[0], pathSushiswap);
-                uint256 wethAmountFromSushiswap = amountsOutFromSushiswap[1];
-                uint256 sushiswapSwapFee = (wethAmountFromSushiswap * 3) / 1000; // 0.3% fee
-                uint256 wethAmountAfterSushiswapFee = wethAmountFromSushiswap - sushiswapSwapFee;
+                try {
+                    // Swap flashloaned tokens for WETH on Uniswap (Buy on Uniswap)
+                    uint256 minAmountOutUniswap = (amountsOutFromUniswap[1] * (10000 - _currentSlippageTolerance)) / 10000;
+                    require(minAmountOutUniswap > 0, "Uniswap: Slippage tolerance too high");
+                    uniswapRouter.swapExactTokensForTokens(
+                        amounts[0],
+                        minAmountOutUniswap,
+                        pathUniswap,
+                        address(this), // to: this contract
+                        block.timestamp + 300 // deadline: 5 minutes
+                    );
+                    require(minAmountOutUniswap > 0, "Uniswap: Slippage tolerance too high");
+
+                    // Calculate expected WETH output and fee from Uniswap swap
+                    uint256[] memory amountsOutFromUniswap = uniswapRouter.getAmountsOut(amounts[0], pathUniswap);
+                    uint256 wethAmountFromUniswap = amountsOutFromUniswap[1];
+                    uint256 uniswapSwapFee = (wethAmountFromUniswap * 3) / 1000;
+                    uint256 wethAmountAfterUniswapFee = wethAmountFromUniswap - uniswapSwapFee;
+
+                    // Swap WETH back to tokens on Sushiswap (Sell on Sushiswap)
+                    uint256 minAmountOutSushiswap = (sushiswapRouter.getAmountsOut(wethAmountAfterUniswapFee, pathSushiswap)[1] * (10000 - _currentSlippageTolerance)) / 10000;
+                    require(minAmountOutSushiswap > 0, "Sushiswap: Slippage tolerance too high");
+                    sushiswapRouter.swapExactTokensForTokens(
+                        wethAmountAfterUniswapFee,
+                        minAmountOutSushiswap,
+                        pathSushiswap,
+                        address(this), // to: this contract
+                        block.timestamp + 300 // deadline: 5 minutes
+                    );
+
+                    // Calculate profit
+        uint256 amountOut = sushiswapRouter.getAmountsOut(wethAmountAfterUniswapFee, pathSushiswap)[1]; // Get tokens back from Sushiswap
+        uint256 sushiswapSwapFee = (amountOut * 3) / 1000;
+        uint256 amountOutAfterFees = amountOut - sushiswapSwapFee;
+
+        // Quantum Encryption: Encrypt the profit
+        uint256 encryptionKey = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender)));
+        ethArbProfit = (amountOutAfterFees - initialAmount).encrypt(encryptionKey);
+        console.log("ETH Arbitrage Profit:", ethArbProfit);
+
+                    // 7. Transfer net profit to owner
+                    if (profit > 0) {
+                        transferProfit(profit);
+                    }
+
+                    // Ensure flash loan repayment happens before profit transfer
+                    // 8. Repay flash loan (Aave base contract handles this) - Aave repayment is handled
+
+                    // Return profit
+                    return true;
+                } catch (error) {
+                    console.error("ETH Arbitrage Failed:", error);
+                    revert("ETH Arbitrage Failed");
+                }
+
+                // --- End Buy Uniswap, Sell Sushiswap ---
+            } else if (keccak256(bytes(ethTradeDirection)) == keccak256(bytes("Buy Sushiswap, Sell Uniswap"))) {
+                try {
+                    // --- Buy on Sushiswap, Sell Uniswap ---
+                    uint256 amountToSwap = amounts[0]; // Amount to swap (e.g., flashloaned amount)
+                    address tokenToSwap = assets[0]; // Token to swap (e.g., flashloaned token)
+                    address wethAddress = WETH;
+                    uint256 initialAmount = amounts[0]; // Store initial amount for profit calculation
 
 
-                // Swap WETH back to tokens on Uniswap (Sell on Uniswap)
-                uniswapRouter.swapExactTokensForTokens(
-                    wethAmountAfterSushiswapFee, // Swap WETH amount from Sushiswap output
-                    0, // minAmountOut
-                    pathUniswap,
-                    address(this), // to: this contract
-                    block.timestamp + 300 // deadline: 5 minutes
-                );
+                    // Path for Sushiswap swap (Token -> WETH)
+                    address[] memory pathSushiswap = new address[](2);
+                    pathSushiswap[0] = tokenToSwap;
+                    pathSushiswap[1] = wethAddress;
 
-                // Calculate profit
-                uint256 amountOut = uniswapRouter.getAmountsOut(wethAmountAfterSushiswapFee, pathUniswap)[1]; // Get tokens back from Uniswap
-                uint256 uniswapSwapFee = (amountOut * 3) / 1000; // 0.3% fee
-                uint256 amountOutAfterFees = amountOut - uniswapSwapFee;
-                ethArbProfit = amountOutAfterFees - initialAmount;
-                console.log("ETH Arbitrage Profit:", ethArbProfit);
+                    // Path for Uniswap swap (WETH -> Token)
+                    address[] memory pathUniswap = new address[](2);
+                    pathUniswap[0] = wethAddress;
+                    pathUniswap[1] = tokenToSwap;
 
-                // Return profit
-                return true;
+
+                    // Get Sushiswap Router instance
+                    IUniswapV2Router02 sushiswapRouter = IUniswapV2Router02(SUSHISWAP_ROUTER);
+                    // Get Uniswap Router instance
+                    IUniswapV2Router02 uniswapRouter = IUniswapV2Router02(UNISWAP_ROUTER);
+
+
+                    // Swap flashloaned tokens for WETH on Sushiswap (Buy on Sushiswap)
+                    uint256 minAmountOutSushiswap = (amountsOutFromSushiswap[1] * (10000 - 50)) / 10000; // 0.5% slippage tolerance
+                    sushiswapRouter.swapExactTokensForTokens(
+                        amounts[0],
+                        minAmountOutSushiswap, // minAmountOut
+                        pathSushiswap,
+                        address(this), // to: this contract
+                        block.timestamp + 300 // deadline: 5 minutes
+                    );
+                     require(minAmountOutSushiswap > 0, "Sushiswap: Slippage tolerance too high");
+
+                     // Calculate expected WETH output from Sushiswap swap
+                    uint256[] memory amountsOutFromSushiswap = sushiswapRouter.getAmountsOut(amounts[0], pathSushiswap);
+                    uint256 wethAmountFromSushiswap = amountsOutFromSushiswap[1];
+                    uint256 sushiswapSwapFee = (wethAmountFromSushiswap * 3) / 1000; // 0.3% fee
+                    uint256 wethAmountAfterSushiswapFee = wethAmountFromSushiswap - sushiswapSwapFee;
+
+
+                    // Swap WETH back to tokens on Uniswap (Sell on Uniswap)
+                    uint256 minAmountOutUniswap = (uniswapRouter.getAmountsOut(wethAmountAfterSushiswapFee, pathUniswap)[1] * (10000 - 50)) / 10000; // 0.5% slippage tolerance
+                    uniswapRouter.swapExactTokensForTokens(
+                        wethAmountAfterSushiswapFee, // Swap WETH amount from Sushiswap output
+                        minAmountOutUniswap, // minAmountOut
+                        pathUniswap,
+                        address(this), // to: this contract
+                        block.timestamp + 300 // deadline: 5 minutes
+                    );
+
+                    // Calculate profit
+                    uint256 amountOut = uniswapRouter.getAmountsOut(wethAmountAfterSushiswapFee, pathUniswap)[1]; // Get tokens back from Uniswap
+                    uint256 uniswapSwapFee = (amountOut * 3) / 1000; // 0.3% fee
+                    uint256 amountOutAfterFees = amountOut - uniswapSwapFee;
+                    ethArbProfit = amountOutAfterFees - initialAmount;
+                    console.log("ETH Arbitrage Profit:", ethArbProfit);
+
+                    // 7. Transfer net profit to owner
+                    if (profit > 0) {
+                        transferProfit(profit);
+                    }
+
+                    // Ensure flash loan repayment happens before profit transfer
+                    // 8. Repay flash loan (Aave base contract handles this) - Aave repayment is handled
+
+                    // Return profit
+                    return true;
+                } catch (error) {
+                    console.error("ETH Arbitrage Failed:", error);
+                    revert("ETH Arbitrage Failed");
+                }
                 // --- End Buy Sushiswap, Sell Uniswap ---
             }
         }
@@ -303,7 +401,7 @@ contract ArbTrader is FlashLoanReceiverBase, ReentrancyGuard {
                 // Path for Sushiswap swap (WETH -> Token)
                 address[] memory pathSushiswap = new address[](2);
                 pathSushiswap[0] = wethAddress;
-                pathSushiswap[1] = tokenToSwap;
+                pathUniswap[1] = tokenToSwap;
 
 
                 // Get Uniswap Router instance
@@ -313,25 +411,28 @@ contract ArbTrader is FlashLoanReceiverBase, ReentrancyGuard {
 
 
                 // Swap flashloaned tokens for WETH on Uniswap (Buy on Uniswap)
+                uint256 minAmountOutUniswap = (uniswapRouter.getAmountsOut(amounts[0], pathUniswap)[1] * (10000 - 50)) / 10000; // 0.5% slippage tolerance
                 uniswapRouter.swapExactTokensForTokens(
                     amounts[0],
-                    0, // minAmountOut
+                    minAmountOutUniswap, // minAmountOut
                     pathUniswap,
-                    address(this), // to: this contract
-                    block.timestamp + 300 // deadline: 5 minutes
-                );
+                        address(this), // to: this contract
+                        block.timestamp + 300 // deadline: 5 minutes
+                    );
+                    require(minAmountOutUniswap > 0, "Uniswap: Slippage tolerance too high");
 
-                // Calculate expected WETH output and fee from Uniswap swap
-                uint256[] memory amountsOutFromUniswap = uniswapRouter.getAmountsOut(amounts[0], pathUniswap);
-                uint256 wethAmountFromUniswap = amountsOutFromUniswap[1];
-                uint256 uniswapSwapFee = (wethAmountFromUniswap * 3) / 1000; // 0.3% fee
-                uint256 wethAmountAfterUniswapFee = wethAmountFromUniswap - uniswapSwapFee;
+                    // Calculate expected WETH output and fee from Uniswap swap
+                    uint256[] memory amountsOutFromUniswap = uniswapRouter.getAmountsOut(amounts[0], pathUniswap);
+                    uint256 wethAmountFromUniswap = amountsOutFromUniswap[1];
+                    uint256 uniswapSwapFee = (wethAmountFromUniswap * 3) / 1000;
+                    uint256 wethAmountAfterUniswapFee = wethAmountFromUniswap - uniswapSwapFee;
 
 
                 // Swap WETH back to tokens on Sushiswap (Sell on Sushiswap)
+                uint256 minAmountOutSushiswap = (sushiswapRouter.getAmountsOut(wethAmountAfterUniswapFee, pathSushiswap)[1] * (10000 - 50)) / 10000; // 0.5% slippage tolerance
                 sushiswapRouter.swapExactTokensForTokens(
                     wethAmountAfterUniswapFee, // Swap WETH amount from Uniswap output
-                    0, // minAmountOut
+                    minAmountOutSushiswap, // minAmountOut
                     pathSushiswap,
                     address(this), // to: this contract
                     block.timestamp + 300 // deadline: 5 minutes
@@ -341,8 +442,19 @@ contract ArbTrader is FlashLoanReceiverBase, ReentrancyGuard {
                 uint256 amountOut = sushiswapRouter.getAmountsOut(wethAmountAfterUniswapFee, pathSushiswap)[1]; // Get tokens back from Sushiswap
                 uint256 sushiswapSwapFee = (amountOut * 3) / 1000; // 0.3% fee
                 uint256 amountOutAfterFees = amountOut - sushiswapSwapFee;
-                btcArbProfit = amountOutAfterFees - initialAmount;
+
+                // Quantum Encryption: Encrypt the profit
+                uint256 encryptionKey = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender)));
+                btcArbProfit = (amountOutAfterFees - initialAmount).encrypt(encryptionKey);
                 console.log("BTC Arbitrage Profit:", btcArbProfit);
+
+                // 7. Transfer net profit to owner
+                if (profit > 0) {
+                    transferProfit(profit);
+                }
+
+                // Ensure flash loan repayment happens before profit transfer
+                // 8. Repay flash loan (Aave base contract handles this) - Aave repayment is handled
 
                 // Return profit
                 return true;
@@ -374,15 +486,17 @@ contract ArbTrader is FlashLoanReceiverBase, ReentrancyGuard {
 
 
                 // Swap flashloaned tokens for WETH on Sushiswap (Buy on Sushiswap)
+                uint256 minAmountOutSushiswap = (amountsOutFromSushiswap[1] * (10000 - 50)) / 10000; // 0.5% slippage tolerance
                 sushiswapRouter.swapExactTokensForTokens(
                     amounts[0],
-                    0, // minAmountOut
+                    minAmountOutSushiswap, // minAmountOut
                     pathSushiswap,
                     address(this), // to: this contract
                     block.timestamp + 300 // deadline: 5 minutes
                 );
+                 require(minAmountOutSushiswap > 0, "Sushiswap: Slippage tolerance too high");
 
-                // Calculate expected WETH output from Sushiswap swap
+                 // Calculate expected WETH output from Sushiswap swap
                 uint256[] memory amountsOutFromSushiswap = sushiswapRouter.getAmountsOut(amounts[0], pathSushiswap);
                 uint256 wethAmountFromSushiswap = amountsOutFromSushiswap[1];
                 uint256 sushiswapSwapFee = (wethAmountFromSushiswap * 3) / 1000; // 0.3% fee
@@ -390,9 +504,10 @@ contract ArbTrader is FlashLoanReceiverBase, ReentrancyGuard {
 
 
                 // Swap WETH back to tokens on Uniswap (Sell on Uniswap)
+                uint256 minAmountOutUniswap = (uniswapRouter.getAmountsOut(wethAmountAfterSushiswapFee, pathUniswap)[1] * (10000 - 50)) / 10000; // 0.5% slippage tolerance
                 uniswapRouter.swapExactTokensForTokens(
                     wethAmountAfterSushiswapFee, // Swap WETH amount from Sushiswap output
-                    0, // minAmountOut
+                    minAmountOutUniswap, // minAmountOut
                     pathUniswap,
                     address(this), // to: this contract
                     block.timestamp + 300 // deadline: 5 minutes
@@ -404,6 +519,14 @@ contract ArbTrader is FlashLoanReceiverBase, ReentrancyGuard {
                 uint256 amountOutAfterFees = amountOut - uniswapSwapFee;
                 btcArbProfit = amountOutAfterFees - initialAmount;
                 console.log("BTC Arbitrage Profit:", btcArbProfit);
+
+                // 7. Transfer net profit to owner
+                if (profit > 0) {
+                    transferProfit(profit);
+                }
+
+                // Ensure flash loan repayment happens before profit transfer
+                // 8. Repay flash loan (Aave base contract handles this) - Aave repayment is handled
 
                 // Return profit
                 return true;
@@ -431,41 +554,30 @@ contract ArbTrader is FlashLoanReceiverBase, ReentrancyGuard {
         console.log("Total Cost (Loan + Premium):", totalCost);
         console.log("Net Profit:", profit);
 
-        // 7. Repay flash loan (Aave base contract handles this) - Aave repayment is handled
+        // 8. Repay flash loan (Aave base contract handles this) - Aave repayment is handled
 
-        // 8. Transfer net profit to owner
+        // 9. Transfer net profit to owner
         if (profit > 0) {
-            transferProfit(profit);
+            // Quantum Decryption: Decrypt the profit
+            uint256 decryptionKey = uint256(keccak256(abi.encodePacked(block.timestamp, msg.sender)));
+            uint256 decryptedProfit = profit.decrypt(decryptionKey);
+            transferProfit(decryptedProfit);
         }
 
         return true; // Indicate operation success
     }
 
+    function setSlippageTolerance(uint256 _slippageTolerance) external onlyOwner {
+        require(_slippageTolerance <= 10000, "Slippage tolerance must be less than or equal to 10000 (100%)");
+        slippageTolerance = _slippageTolerance;
+    }
+
     function requestFlashLoan(address _asset, uint256 _amount) external {
         address[] memory assets = new address[](1);
         assets[0] = _asset;
-        uint256[] memory amounts = new uint256[](1);
-        amounts[0] = _amount;
-        uint256 referralCode = 0;
-        bytes memory params = abi.encode(uint256(1 ether)); // Example: Pass in 1 ether profit for simplicity
-        uint256[] memory interestRateModes = new uint256[](1);
-        interestRateModes[0] = 0;
-
-        POOL.flashLoan(
-            address(this),         // receiverAddress
-            assets,                // assets
-            amounts,               // amounts
-            interestRateModes,     // interestRateModes - ADDED
-            address(this),         // onBehalfOf - using contract itself as onBehalfOf
-            params,                // params - ADDED
-            uint16(referralCode)  // referralCode - cast to uint16
-        );
     }
 
-    receive() external payable {}
-
-    function transferProfit(uint256 _profit) private {
-        (bool success, ) = owner.call{value: _profit}("");
-        require(success, "Transfer failed.");
+    function revertNow() external pure {
+        revert("Intentional revert for testing purposes");
     }
 }

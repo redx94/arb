@@ -28,7 +28,6 @@ The High-Frequency Arbitrage Trading System is a sophisticated platform designed
 ### System Requirements
 - Node.js 20.x or higher
 - Modern web browser with WebSocket support
-- Ethereum wallet with sufficient funds
 - Network connection with low latency
 
 ## Getting Started
@@ -36,7 +35,7 @@ The High-Frequency Arbitrage Trading System is a sophisticated platform designed
 ### Quick Start
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/arbitrage-system
+git clone https://github.com/redx94/arb
 
 # Install dependencies
 npm install

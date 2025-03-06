@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { ArbitrageVisualizer } from '../ArbitrageVisualizer.js';
-import { ArbitrageOpportunities } from './ArbitrageOpportunities.js';
-import { TradeHistory } from './TradeHistory.js';
+import { ArbitrageVisualizer } from '../ArbitrageVisualizer.ts';
+import { ArbitrageOpportunities } from './ArbitrageOpportunities.ts';
+import { TradeHistory } from './TradeHistory.ts';
 import { PriceData, TradeDetails } from '../../types/index.ts';
-import { ArbitrageEngine } from '../../utils/arbitrage/arbitrageEngine.js';
+import { ArbitrageEngine } from '../../utils/arbitrage/arbitrageEngine.ts';
+import ARSystemDiagnostics from './ARSystemDiagnostics.ts';
+import ARPerformanceMetrics from './ARPerformanceMetrics.ts';
+import ARMarketData from './ARMarketData.ts';
+import ARTradeAnalytics from './ARTradeAnalytics.ts';
 
 interface DashboardProps {
   useMockData: boolean;
@@ -41,6 +45,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ useMockData, setUseMockDat
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <ArbitrageOpportunities opportunities={arbitrageOpportunities} />
         <TradeHistory tradeHistory={tradeHistory} />
+      </div>
+
+      {/* AR System Diagnostics Section */}
+      <div className="mt-16">
+        <ARSystemDiagnostics />
+      </div>
+
+      {/* AR Performance Metrics Section */}
+      <div className="mt-8">
+        <ARPerformanceMetrics />
+      </div>
+
+      {/* AR Market Data Section */}
+      <div className="mt-8">
+        <ARMarketData />
+      </div>
+
+      {/* AR Trade Analytics Section */}
+      <div className="mt-8">
+        <ARTradeAnalytics />
       </div>
     </div>
   );

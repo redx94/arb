@@ -56,7 +56,7 @@ export class PerformanceMonitor {
 
 export class Logger {
   private static instance: Logger;
-  private logBuffer: { level: string; message: string; meta?: any; timestamp: Date }[] = [];
+  private logBuffer: any[] = [];
   private readonly BUFFER_SIZE = 1000;
 
   private constructor() {}
@@ -73,40 +73,69 @@ export class Logger {
       timestamp: new Date().toISOString(),
       level,
       message,
-      ...meta
+      ...meta,
+      quantumSignature: this.generateQuantumSignature(message, meta), // Add quantum signature
     });
+  }
+
+  private generateQuantumSignature(message: string, meta?: any): string {
+    // Placeholder for quantum signature generation logic
+    // In a real implementation, this would involve a quantum-computing-based hash or signature
+    const data = JSON.stringify({ message, meta, timestamp: new Date().toISOString() });
+    return `QuantumSignature(${data.length})`; // Simulate a quantum signature
   }
 
   public info(message: string, meta?: any): void {
     const formattedMessage = this.formatMessage('info', message, meta);
     console.log(formattedMessage);
-    this.bufferLog({ level: 'info', message, meta, timestamp: new Date() });
+    this.bufferLog({ level: 'info', message, meta });
   }
 
   public error(message: string, error?: Error, meta?: any): void {
-    const formattedMessage = this.formatMessage('error', message, {
+    const errorMeta: any = {
       error: error?.message,
       stack: error?.stack,
-      ...meta
-    });
+      ...meta,
+    };
+
+    if (meta?.txHash) {
+      errorMeta.txHash = meta.txHash;
+    }
+    if (meta?.revertReason) {
+      errorMeta.revertReason = meta.revertReason;
+    }
+
+    const formattedMessage = this.formatMessage('error', message, errorMeta);
     console.error(formattedMessage);
-    this.bufferLog({ level: 'error', message, meta: {error: error?.message, stack: error?.stack, ...meta}, timestamp: new Date() });
+    this.bufferLog({ level: 'error', message, meta: errorMeta });
   }
 
   public warn(message: string, meta?: any): void {
     const formattedMessage = this.formatMessage('warn', message, meta);
     console.warn(formattedMessage);
-    this.bufferLog({ level: 'warn', message, meta, timestamp: new Date() });
+    this.bufferLog({ level: 'warn', message, meta });
   }
 
-  private bufferLog(log: { level: string; message: string; meta?: any; timestamp: Date }): void {
-    this.logBuffer.push({ ...log, timestamp: new Date() });
+  private bufferLog(log: any): void {
+    this.logBuffer.push(log);
     if (this.logBuffer.length > this.BUFFER_SIZE) {
       this.logBuffer.shift();
     }
+    // Implement AI-driven root cause analysis
+    this.analyzeLogs();
   }
 
-  public getLogs(): { level: string; message: string; meta?: any; timestamp: Date }[] {
+  private analyzeLogs(): void {
+    // Basic example of log analysis
+    const errorLogs = this.logBuffer.filter(log => log.level === 'error');
+    if (errorLogs.length > 5) {
+      console.warn("High number of errors detected. Triggering advanced analysis...");
+      // In a real implementation, this would trigger a call to a quantum machine learning model
+      // to perform root cause analysis and identify potential solutions.
+    }
+  }
+
+  public getLogs(): any[] {
     return [...this.logBuffer];
   }
 

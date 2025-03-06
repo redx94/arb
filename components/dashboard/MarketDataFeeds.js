@@ -5,6 +5,13 @@ import { useTradeStore } from '../../utils/store';
 import { PriceFeed } from '../../utils/priceFeeds';
 import { Logger } from '../../utils/monitoring';
 const logger = Logger.getInstance();
+import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
+import React from 'react';
+import { Activity, AlertCircle, TrendingUp, TrendingDown } from 'lucide-react';
+import { useTradeStore } from '../../utils/store';
+import { PriceFeed } from '../../utils/priceFeeds';
+import { Logger } from '../../utils/monitoring';
+const logger = Logger.getInstance();
 export const MarketDataFeeds = () => {
     const [markets, setMarkets] = React.useState({
         'ETH/USDT': {
@@ -65,7 +72,7 @@ export const MarketDataFeeds = () => {
             setStatus('disconnected');
         };
     }, [updatePriceHistory]);
-    return (_jsxs("div", { className: "bg-white rounded-lg shadow-lg p-6", children: [_jsxs("div", { className: "flex items-center justify-between mb-6", children: [_jsxs("h2", { className: "text-xl font-semibold flex items-center", children: [_jsx(Activity, { className: "mr-2 h-6 w-6 text-blue-600" }), "Live Market Data"] }), _jsxs("div", { className: "flex items-center", children: [_jsx("span", { className: `inline-flex items-center px-3 py-1 rounded-full text-sm ${status === 'connected'
+    return (_jsxs("div", { className: "bg-gray-50 rounded-lg shadow-lg p-6", children: [_jsxs("div", { className: "flex items-center justify-between mb-6", children: [_jsxs("h2", { className: "text-xl font-semibold flex items-center", children: [_jsx(Activity, { className: "mr-2 h-6 w-6 text-blue-600" }), "Live Market Data"] }), _jsxs("div", { className: "flex items-center", children: [_jsx("span", { className: `inline-flex items-center px-3 py-1 rounded-full text-sm ${status === 'connected'
                                     ? 'bg-green-100 text-green-800'
                                     : status === 'error'
                                         ? 'bg-red-100 text-red-800'

@@ -3,6 +3,12 @@ import { useState, useEffect } from 'react';
 import { ArbitrageVisualizer } from '../ArbitrageVisualizer';
 import { ArbitrageOpportunities } from './ArbitrageOpportunities';
 import { TradeHistory } from './TradeHistory';
+import { SystemStatus } from './SystemStatus';
+import { MarketDataFeeds } from './MarketDataFeeds';
+import { FlashLoanInformation } from './FlashLoanInformation';
+import { PerformanceMetricsDashboard } from './PerformanceMetricsDashboard';
+import { RiskManagementDashboard } from './RiskManagementDashboard';
+import { TradingControlsDashboard } from './TradingControlsDashboard';
 import { ArbitrageEngine } from '../../utils/arbitrage/arbitrageEngine';
 export const Dashboard = ({ useMockData, setUseMockData, priceHistory }) => {
     const [tradeHistory, setTradeHistory] = useState([]);
@@ -22,6 +28,6 @@ export const Dashboard = ({ useMockData, setUseMockData, priceHistory }) => {
             arbitrageEngine.off('opportunity', handleOpportunity);
         };
     }, []);
-    return (_jsxs("div", { className: "p-8 space-y-8", children: [_jsx(ArbitrageVisualizer, { useMockData: useMockData, setUseMockData: setUseMockData, priceHistory: priceHistory }), _jsxs("div", { className: "grid grid-cols-1 md:grid-cols-2 gap-8", children: [_jsx(ArbitrageOpportunities, { opportunities: arbitrageOpportunities }), _jsx(TradeHistory, { tradeHistory: tradeHistory })] })] }));
+    return (_jsxs("div", { className: "p-8 space-y-8", children: [_jsx("div", { children: _jsx(SystemStatus, {}) }), _jsx("div", { children: _jsx(MarketDataFeeds, {}) }), _jsx(ArbitrageOpportunities, { opportunities: arbitrageOpportunities }), _jsx(TradeHistory, { tradeHistory: tradeHistory }), _jsx("div", { children: _jsx(PerformanceMetricsDashboard, {}) }), _jsx("div", { children: _jsx(RiskManagementDashboard, {}) }), _jsx("div", { children: _jsx(TradingControlsDashboard, {}) }), _jsx("div", { children: _jsx(FlashLoanInformation, {}) }), _jsx(ArbitrageVisualizer, { useMockData: useMockData, setUseMockData: setUseMockData, priceHistory: priceHistory })] }));
 };
 export default Dashboard;
