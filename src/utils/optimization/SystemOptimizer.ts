@@ -126,16 +126,6 @@ export class SystemOptimizer {
     optimizeResources();
   }
 
-  private async analyzePerformanceTrends(): Promise<void> {
-    try {
-      const recentMetrics = this.metricsCache.getAllEntries()
-        .slice(-this.METRICS_HISTORY_LIMIT)
-        .map(entry => entry.value);
-
-      if (recentMetrics.length < 10) {
-        logger.warn('Insufficient data to analyze performance trends');
-        return;
-      }
 
       // Calculate average CPU usage
       const avgCpuUsage = recentMetrics.reduce((sum, metric) => sum + metric.cpu.usage, 0) / recentMetrics.length;
@@ -152,6 +142,16 @@ export class SystemOptimizer {
     } catch (error) {
       logger.error('Failed to analyze performance trends:', error as Error);
     }
+  }
+
+  private calculateOptimizationValue(anomaly: { type: string; severity: number; metric: keyof SystemMetrics }): number {
+    // TODO: Implement actual logic for optimization value calculation using Gemini AI
+    logger.warn('Optimization value calculation is currently a mock value. Implement the actual logic using Gemini AI.');
+    let value = anomaly.severity * 10;
+    if (anomaly.metric === 'cpu') {
+      value = value * 0.8; // Reduce CPU usage more conservatively
+    }
+    return value;
   }
 
   private async detectPerformanceAnomalies(metrics: SystemMetrics[]): Promise<Array<{ type: string; severity: number; metric: keyof SystemMetrics }>> {
@@ -283,12 +283,37 @@ export class SystemOptimizer {
 
   private async getNetworkBandwidth(): Promise<number> {
     try {
-      // TODO: Implement logic to fetch network bandwidth from a reliable source
-      this.logger.warn('Network bandwidth is currently a mock value. Implement the actual logic to fetch network bandwidth.');
-      return 1000 + Math.random() * 1000;
+      // TODO: Implement logic to fetch network bandwidth from a reliable source using Gemini AI.
+      // ALIGN_TIMELINE_NODES - Use Gemini to predict network bandwidth - Phase 7 - Gemini AI
+      logger.warn('Network bandwidth is currently a mock value. Implement the actual logic to fetch network bandwidth using Gemini AI.');
+      // For now, return a mock value
+      return 1500 + Math.random() * 500; // Mock bandwidth value
     } catch (error) {
       logger.error('Failed to get network bandwidth:', error as Error);
       return 0;
+    }
+  }
+
+  private calculateOptimizationValue(anomaly: { type: string; severity: number; metric: keyof SystemMetrics }): number {
+    // TODO: Implement actual logic for optimization value calculation using Gemini AI - Phase 7
+    logger.warn('Optimization value calculation is currently a mock value. Implement the actual logic using Gemini AI.');
+    let value = anomaly.severity * 10;
+    if (anomaly.metric === 'cpu') {
+      value = value * 0.8; // Reduce CPU usage more conservatively
+    }
+    return value;
+  }
+
+  private async applyOptimizationAction(action: OptimizationAction): Promise<void> {
+    logger.info(`Applying optimization action: ${JSON.stringify(action)}`);
+    // TODO: Implement actual logic to apply optimization action - Phase 7 - Gemini AI
+    // For example, adjust gas price or trade size - ARCANE_CODEFORGE
+    if (action.target === 'cpu') {
+      // Reduce CPU usage - e.g., by reducing the number of concurrent tasks
+      logger.info('Reducing CPU usage by throttling concurrent tasks');
+    } else if (action.target === 'memory') {
+      // Increase memory allocation - e.g., by increasing the cache size
+      logger.info('Increasing memory allocation by increasing cache size');
     }
   }
 
@@ -376,8 +401,8 @@ export class SystemOptimizer {
   }
 
   private calculateOptimizationValue(anomaly: { type: string; severity: number; metric: keyof SystemMetrics }): number {
-    // TODO: Implement actual logic for optimization value calculation
-    logger.warn('Optimization value calculation is currently a mock value. Implement the actual logic.');
+    // TODO: Implement actual logic for optimization value calculation - Phase 7 - Gemini AI - ARCANE_CODEFORGE - QIP-X Apex
+    logger.warn('Optimization value calculation is currently a mock value. Implement the actual logic using Gemini AI.');
     let value = anomaly.severity * 10;
     if (anomaly.metric === 'cpu') {
       value = value * 0.8; // Reduce CPU usage more conservatively

@@ -140,12 +140,12 @@ export class PriceFeed extends EventEmitter {
 
   public async getDexLiquidity(): Promise<number> {
     try {
-      // TODO: Implement logic to fetch DEX liquidity from a reliable source (e.g., Uniswap V2 pair contract)
+      // TODO: Implement logic to fetch DEX liquidity from a reliable source (e.g., Uniswap V2 pair contract) - Phase 2 - Gemini AI
       this.logger.warn('DEX liquidity is currently a mock value. Implement the actual logic to fetch DEX liquidity.');
-      return 1000000; // Mock liquidity value for now
-    } catch (error: any) {
-      this.logger.error('Failed to fetch DEX liquidity:', error);
-      return 1000000; // Return a default value in case of error
+      return 1000 + Math.random() * 1000;
+    } catch (error) {
+      this.logger.error('Failed to get DEX liquidity:', error);
+      return 0;
     }
   }
 }

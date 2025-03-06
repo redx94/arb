@@ -47,22 +47,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ useMockData, setUseMockDat
         <TradeHistory tradeHistory={tradeHistory} />
       </div>
 
-      {/* AR System Diagnostics Section */}
+      {/* Enhanced AR System Diagnostics Section */}
       <div className="mt-16">
         <ARSystemDiagnostics />
       </div>
 
-      {/* AR Performance Metrics Section */}
+      {/* Enhanced AR Performance Metrics Section */}
       <div className="mt-8">
         <ARPerformanceMetrics />
       </div>
 
-      {/* AR Market Data Section */}
+      {/* Enhanced AR Market Data Section */}
       <div className="mt-8">
         <ARMarketData />
       </div>
 
-      {/* AR Trade Analytics Section */}
+      {/* Enhanced AR Trade Analytics Section */}
       <div className="mt-8">
         <ARTradeAnalytics />
       </div>
