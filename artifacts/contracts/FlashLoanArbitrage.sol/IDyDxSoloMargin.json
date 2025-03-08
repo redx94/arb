@@ -1,0 +1,71 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "IDyDxSoloMargin",
+  "sourceName": "contracts/FlashLoanArbitrage.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address[]",
+          "name": "accounts",
+          "type": "address[]"
+        },
+        {
+          "components": [
+            {
+              "internalType": "uint8",
+              "name": "actionType",
+              "type": "uint8"
+            },
+            {
+              "internalType": "uint256",
+              "name": "accountId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "amount",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "primaryMarketId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "uint256",
+              "name": "secondaryMarketId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "address",
+              "name": "otherAddress",
+              "type": "address"
+            },
+            {
+              "internalType": "uint256",
+              "name": "otherAccountId",
+              "type": "uint256"
+            },
+            {
+              "internalType": "bytes",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "internalType": "struct IDyDxSoloMargin.Action[]",
+          "name": "actions",
+          "type": "tuple[]"
+        }
+      ],
+      "name": "operate",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}

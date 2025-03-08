@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { execute_command } from '../utils/tool_utils.ts'; // Assuming you create a tool_utils file
 
 interface SecurityAnalysisProps {
   contractName: string;
@@ -39,12 +40,12 @@ const SecurityAnalysis: React.FC<SecurityAnalysisProps> = ({ contractName, onAna
     try {
       const command = `solhint --config .solhint.json contracts/${contractName}`;
       const result = await executeCommand(command);
-      if (result.exitCode === 0) {
+      if (result && result.exitCode === 0) { // Check if result is not null and then access properties
         const parsedVulnerabilities = parseSolhintOutput(result.output);
         setVulnerabilities(parsedVulnerabilities);
       } else {
-        console.error('Solhint analysis failed:', result.error);
-        setVulnerabilities([`Solhint analysis failed: ${result.error || 'Unknown error'}. Please check console for details.`]);
+        console.error('Solhint analysis failed:', result ? result.error : 'Command execution failed'); // Added check for result being null
+        setVulnerabilities([`Solhint analysis failed: ${result ? (result.error || 'Unknown error') : 'Command execution failed'}. Please check console for details.`]);
       }
     } catch (error) {
       console.error('Error executing solhint:', error);
@@ -54,33 +55,23 @@ const SecurityAnalysis: React.FC<SecurityAnalysisProps> = ({ contractName, onAna
     }
   };
 
-  const executeCommand = async (command: string): Promise<{ exitCode: number; output: string; error: string }> => {
+  // Refactored executeCommand to use the tool
+  const executeCommand = async (command: string): Promise<{ exitCode: number; output: string; error: string } | null> => {
     try {
-      const process = await new Promise<{ exitCode: number, output: string, error: string }>((resolve, reject) => {
-        let output = '';
-        let error = '';
-        const childProcess = require('child_process').exec(command, { cwd: '/Users/redx/Documents/arb' });
-
-        childProcess.stdout.on('data', (data: string) => {
-          output += data;
-        });
-
-        childProcess.stderr.on('data', (data: string) => {
-          error += data;
-        });
-
-        childProcess.on('close', (exitCode: number) => {
-          resolve({ exitCode, output, error });
-        });
-
-        childProcess.on('error', (err: Error) => {
-          reject(err);
-        });
-      });
-      return process;
+      const executionResult = await execute_command({ command: command, requires_approval: false });
+      if (executionResult) {
+        return {
+          exitCode: 0, // Assuming success if executionResult is not null, adjust as needed based on actual tool response
+          output: executionResult.stdout || '',
+          error: executionResult.stderr || '',
+        };
+      } else {
+        console.error('Command execution failed, no result returned from tool.');
+        return null; // Indicate failure to get a result from the tool
+      }
     } catch (error: any) {
       console.error('Command execution error:', error);
-      return { exitCode: -1, output: '', error: error.message };
+      return null; // Indicate command execution failure
     }
   };
 
@@ -104,7 +95,7 @@ const SecurityAnalysis: React.FC<SecurityAnalysisProps> = ({ contractName, onAna
     <div className="w-full max-w-4xl mx-auto bg-white rounded-lg shadow-sm overflow-hidden">
       <div className="p-6 border-b border-gray-200">
         <h2 className="text-xl font-semibold text-gray-800">Smart Contract Security Analysis</h2>
-        <p className="mt-2 text-gray-600">Analyzing {contractName || 'ArbTrader.sol'} for security vulnerabilities</p>
+        <p className="mt-2 text-gray-600">Analyzing {contractName || 'ArbTrader.sol'} for security vulnerabilities using Solhint</p>
       </div>
 
       <div className="p-6">
@@ -164,12 +155,12 @@ const SecurityAnalysis: React.FC<SecurityAnalysisProps> = ({ contractName, onAna
                     <div className="ml-3">
                       <p className="text-sm font-medium text-gray-900">{vulnerability}</p>
                       <p className="mt-1 text-xs text-gray-500">
-                        Severity: High | Impact: Critical | Location: Line 42-57
+                        Severity: High | Impact: Critical | Location: Line ... {/* More detailed location to be added */}
                       </p>
                     </div>
                     <div className="ml-auto">
                       <button className="text-xs text-indigo-600 hover:text-indigo-800 transition-colors duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-sm px-2 py-1">
-                        View Details
+                        View Details {/* Placeholder for future detailed view */}
                       </button>
                     </div>
                   </div>

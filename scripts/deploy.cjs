@@ -48,7 +48,21 @@ async function deploy() {
         // Deploy ZeroCapitalArbTrader and pass ArbTrader contract address
         console.log("\nDeploying ZeroCapitalArbTrader from address:", deployer.address);
         const zeroCapitalArbTraderFactory = new ethers.ContractFactory(zeroCapitalArbTraderAbi, zeroCapitalArbTraderBytecode, deployer);
-        const zeroCapitalArbTraderContract = await zeroCapitalArbTraderFactory.deploy(aavePoolAddressesProvider, contractAddress); // Pass ArbTrader address
+        const feeRecipientAddress = process.env.FEE_RECIPIENT_ADDRESS; // Load fee recipient address
+        if (!feeRecipientAddress) {
+            throw new Error("Missing FEE_RECIPIENT_ADDRESS in .env");
+        }
+
+        const initialNetworks = [0]; // Network.Ethereum = 0 (for Sepolia testnet in this example)
+        const poolProviders = [process.env.AAVE_POOL_ADDRESSES_PROVIDER];
+        const liquidityScores = [75]; // Example liquidity score for Sepolia
+
+        const zeroCapitalArbTraderContract = await zeroCapitalArbTraderFactory.deploy(
+            feeRecipientAddress,
+            initialNetworks,
+            poolProviders,
+            liquidityScores
+        );
         await zeroCapitalArbTraderContract.waitForDeployment();
         const zeroCapitalArbTraderContractAddress = await zeroCapitalArbTraderContract.getAddress();
 
