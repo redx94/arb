@@ -38,34 +38,35 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.walletManager = void 0;
 var ethers_1 = require("ethers");
-var monitoring_js_1 = require("./monitoring.js");
+var monitoring_cjs_1 = require("./monitoring.cjs");
 var WalletManager = /** @class */ (function () {
     function WalletManager() {
         this.wallets = new Map();
         this.mockMode = false; // Default to live mode for production
-        this.logger = monitoring_js_1.Logger.getInstance();
-        if (process.env.PROVIDER_URL) {
-            try {
-                this.provider = new ethers_1.ethers.JsonRpcProvider(process.env.PROVIDER_URL);
+        this.logger = monitoring_cjs_1.Logger.getInstance();
+        try {
+            if (process.env.PROVIDER_URL) {
+                this.provider = new ethers_1.providers.JsonRpcProvider(process.env.PROVIDER_URL);
+                this.setProvider(process.env.PROVIDER_URL);
             }
-            catch (error) {
-                console.warn('Failed to set provider from PROVIDER_URL, using mock provider for development');
-                this.provider = new ethers_1.ethers.JsonRpcProvider('http://localhost:8545');
+            else {
+                // Default to mock provider if PROVIDER_URL is not set
+                this.provider = new ethers_1.providers.JsonRpcProvider('http://localhost:8545');
             }
         }
-        else {
-            // Default to mock provider if PROVIDER_URL is not set
-            this.provider = new ethers_1.ethers.JsonRpcProvider('http://localhost:8545');
+        catch (error) {
+            console.warn('Failed to set provider from PROVIDER_URL using mock provider for development');
+            this.provider = new ethers_1.providers.JsonRpcProvider('http://localhost:8545');
         }
     }
     WalletManager.prototype.setProvider = function (rpcUrl, apiKey) {
         try {
             var url = apiKey ? "".concat(rpcUrl, "/").concat(apiKey) : rpcUrl;
-            this.provider = new ethers_1.ethers.JsonRpcProvider(url);
+            this.provider = new ethers_1.providers.JsonRpcProvider(url);
         }
         catch (error) {
             console.warn('Using mock provider for development');
-            this.provider = new ethers_1.ethers.JsonRpcProvider('http://localhost:8545');
+            this.provider = new ethers_1.providers.JsonRpcProvider('http://localhost:8545');
         }
     };
     WalletManager.prototype.setMockMode = function (enabled) {
@@ -74,7 +75,7 @@ var WalletManager = /** @class */ (function () {
     WalletManager.prototype.setLiveProvider = function (rpcUrl, apiKey) {
         try {
             var url = apiKey ? "".concat(rpcUrl, "/").concat(apiKey) : rpcUrl;
-            this.provider = new ethers_1.ethers.JsonRpcProvider(url);
+            this.provider = new ethers_1.providers.JsonRpcProvider(url);
             this.mockMode = false; // Disable mock mode when using live provider
             console.log("Live provider set to ".concat(rpcUrl));
         }
@@ -93,7 +94,6 @@ var WalletManager = /** @class */ (function () {
             var wallet, newWallet, mockWallet;
             return __generator(this, function (_a) {
                 try {
-                    wallet = void 0;
                     if (privateKey) {
                         wallet = new ethers_1.ethers.Wallet(privateKey); // Create wallet from private key
                     }
@@ -139,7 +139,7 @@ var WalletManager = /** @class */ (function () {
                         return [4 /*yield*/, this.provider.getBalance(address)];
                     case 2:
                         balance = _a.sent();
-                        return [2 /*return*/, ethers_1.ethers.formatEther(balance)];
+                        return [2 /*return*/, ethers_1.ethers.utils.formatEther(balance)];
                     case 3:
                         error_1 = _a.sent();
                         console.warn('Error getting balance, using mock balance');
@@ -152,11 +152,10 @@ var WalletManager = /** @class */ (function () {
     WalletManager.prototype.signTransaction = function (from, to, value, data) {
         return __awaiter(this, void 0, void 0, function () {
             var wallet, nonce, gasPrice, tx, signer, signedTx, error_2;
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        _b.trys.push([0, 4, , 5]);
+                        _a.trys.push([0, 4, , 5]);
                         wallet = this.wallets.get(from);
                         if (!wallet) {
                             throw new Error('Wallet not found');
@@ -177,16 +176,16 @@ var WalletManager = /** @class */ (function () {
                         }
                         return [4 /*yield*/, this.provider.getTransactionCount(from)];
                     case 1:
-                        nonce = _b.sent();
+                        nonce = _a.sent();
                         return [4 /*yield*/, this.provider.getFeeData()];
                     case 2:
-                        gasPrice = _b.sent();
+                        gasPrice = _a.sent();
                         tx = {
                             hash: '',
                             from: from,
                             to: to,
                             value: value,
-                            gasPrice: ((_a = gasPrice.gasPrice) === null || _a === void 0 ? void 0 : _a.toString()) || '20000000000',
+                            gasPrice: gasPrice.gasPrice ? gasPrice.gasPrice.toString() : '20000000000',
                             gasLimit: '21000',
                             nonce: nonce,
                             data: data,
@@ -195,11 +194,11 @@ var WalletManager = /** @class */ (function () {
                         signer = new ethers_1.ethers.Wallet(wallet.privateKey, this.provider);
                         return [4 /*yield*/, signer.signTransaction(tx)];
                     case 3:
-                        signedTx = _b.sent();
-                        tx.hash = ethers_1.ethers.keccak256(tx);
+                        signedTx = _a.sent();
+                        tx.hash = ethers_1.ethers.utils.keccak256(signedTx);
                         return [2 /*return*/, tx];
                     case 4:
-                        error_2 = _b.sent();
+                        error_2 = _a.sent();
                         console.warn('Error signing transaction:', error_2 instanceof Error ? error_2 : new Error(String(error_2)));
                         throw new Error('Failed to sign transaction');
                     case 5: return [2 /*return*/];
@@ -249,9 +248,4 @@ var WalletManager = /** @class */ (function () {
     };
     return WalletManager;
 }());
-var walletManager = new WalletManager();
-exports.walletManager = walletManager;
-// Initialize with mock mode for development
-if (process.env.PROVIDER_URL) {
-    walletManager.setProvider(process.env.PROVIDER_URL);
-}
+exports.walletManager = new WalletManager();

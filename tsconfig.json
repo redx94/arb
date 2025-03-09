@@ -6,12 +6,12 @@
       "ES2021",
       "ESNext"
     ],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
     "declaration": true,
     "resolveJsonModule": true,
     "isolatedModules": false,
-    "noEmit": false,
+    "noEmit": true,
     "outDir": "./build",
     "strict": false,
     "noImplicitAny": true,
@@ -23,7 +23,6 @@
     "useUnknownInCatchVariables": true,
     "alwaysStrict": true,
     "noUnusedLocals": true,
-    "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "allowJs": true,
     "checkJs": false,
@@ -32,24 +31,22 @@
     "forceConsistentCasingInFileNames": true,
     "useDefineForClassFields": true,
     "skipLibCheck": false,
-    "declaration": false,
     "moduleDetection": "force",
     "jsx": "react-jsx",
+    "allowImportingTsExtensions": true,
     "baseUrl": ".",
     "paths": {
       "*": ["./src/*"]
-    },
-    "allowImportingTsExtensions": true
+    }
   },
   "include": [
-    "src",
-    "utils",
-    "scripts",
-    "components",
-    "test",
-    "index.html"
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.d.ts"
   ],
     "exclude": [
-      "node_modules"
+      "node_modules",
+      "node_modules/@types/chai",
+      "node_modules/@vitest/expect"
     ]
 }

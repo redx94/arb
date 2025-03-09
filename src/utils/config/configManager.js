@@ -37,104 +37,90 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.configManager = void 0;
-var ethers_1 = require("ethers");
-var networks_1 = require("./networks");
-var protocols_1 = require("./protocols");
-var wallet_1 = require("../wallet");
-var ConfigManager = /** @class */ (function () {
-    function ConfigManager() {
+const ethers = require('ethers');
+const networks_1 = require("./networks");
+const protocols_1 = require("./protocols");
+const wallet_1 = require("../wallet");
+class ConfigManager {
+    constructor() {
         this.config = null;
         this.providers = new Map();
     }
-    ConfigManager.getInstance = function () {
+    static getInstance() {
         if (!ConfigManager.instance) {
             ConfigManager.instance = new ConfigManager();
         }
         return ConfigManager.instance;
-    };
-    ConfigManager.prototype.initialize = function () {
-        return __awaiter(this, arguments, void 0, function (networkName, apiKey) {
-            var network, protocols;
-            if (networkName === void 0) { networkName = 'local'; }
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        network = networks_1.networks[networkName];
-                        if (!network) {
-                            throw new Error("Network ".concat(networkName, " not supported"));
-                        }
-                        protocols = protocols_1.protocolAddresses[networkName] || protocols_1.protocolAddresses.mainnet;
-                        this.config = {
-                            network: network,
-                            protocols: protocols,
-                            fallbackProviders: [
-                                'https://eth-mainnet.infura.io/v3',
-                                'https://rpc.ankr.com/eth'
-                            ],
-                            maxRetries: 3,
-                            retryDelay: 1000
-                        };
-                        return [4 /*yield*/, this.setupProviders(network, apiKey)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
+    }
+    initialize(networkName, apiKey) {
+        if (networkName === void 0) { networkName = 'local'; }
+        return __awaiter(this, void 0, void 0, function* () {
+            const network = networks_1.networks[networkName];
+            if (!network) {
+                throw new Error(`Network ${networkName} not supported`);
+            }
+            const protocols = protocols_1.protocolAddresses[networkName] || protocols_1.protocolAddresses.mainnet;
+            this.config = {
+                network: network,
+                protocols: protocols,
+                fallbackProviders: [
+                    'https://eth-mainnet.infura.io/v3',
+                    'https://rpc.ankr.com/eth'
+                ],
+                maxRetries: 3,
+                retryDelay: 1000
+            };
+            yield this.setupProviders(network, apiKey);
         });
-    };
-    ConfigManager.prototype.setupProviders = function (network, apiKey) {
-        return __awaiter(this, void 0, void 0, function () {
-            var mainProvider, wsProvider, localProvider;
-            return __generator(this, function (_a) {
-                try {
-                    mainProvider = this.createProvider(network.rpcUrl, apiKey);
-                    this.providers.set('main', mainProvider);
-                    // Setup WebSocket provider if available
-                    if (network.wsUrl) {
-                        wsProvider = this.createWebSocketProvider(network.wsUrl, apiKey);
-                        this.providers.set('ws', wsProvider);
-                    }
-                    // Initialize wallet manager with main provider
-                    wallet_1.walletManager.setProvider(network.rpcUrl, apiKey);
+    }
+    setupProviders(network, apiKey) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const mainProvider = this.createProvider(network.rpcUrl, apiKey);
+                this.providers.set('main', mainProvider);
+                // Setup WebSocket provider if available
+                if (network.wsUrl) {
+                    const wsProvider = this.createWebSocketProvider(network.wsUrl, apiKey);
+                    this.providers.set('ws', wsProvider);
                 }
-                catch (error) {
-                    console.error('Failed to setup providers:', error);
-                    localProvider = new ethers_1.ethers.JsonRpcProvider('http://localhost:8545');
-                    this.providers.set('main', localProvider);
-                    wallet_1.walletManager.setProvider('http://localhost:8545');
-                }
-                return [2 /*return*/];
-            });
+                // Initialize wallet manager with main provider
+                wallet_1.walletManager.setProvider(network.rpcUrl, apiKey);
+            }
+            catch (error) {
+                console.error('Failed to setup providers:', error);
+                const localProvider = new ethers.providers.JsonRpcProvider('http://localhost:8545');
+                this.providers.set('main', localProvider);
+                wallet_1.walletManager.setProvider('http://localhost:8545');
+            }
         });
-    };
-    ConfigManager.prototype.createProvider = function (rpcUrl, apiKey) {
-        var url = apiKey ? "".concat(rpcUrl, "/").concat(apiKey) : rpcUrl;
-        return new ethers_1.ethers.JsonRpcProvider(url);
-    };
-    ConfigManager.prototype.createWebSocketProvider = function (wsUrl, apiKey) {
-        var url = apiKey ? "".concat(wsUrl, "/").concat(apiKey) : wsUrl;
-        return new ethers_1.ethers.WebSocketProvider(url);
-    };
-    ConfigManager.prototype.getProvider = function (type) {
-        if (type === void 0) { type = 'main'; }
-        var provider = this.providers.get(type);
+    }
+    createProvider(rpcUrl, apiKey) {
+        const url = apiKey ? `${rpcUrl}/${apiKey}` : rpcUrl;
+        return new ethers.providers.JsonRpcProvider(url);
+    }
+    createWebSocketProvider(wsUrl, apiKey) {
+        const url = apiKey ? `${wsUrl}/${apiKey}` : wsUrl;
+        return new ethers.providers.WebSocketProvider(url);
+    }
+    getProvider(type = 'main') {
+        console.log('PROVIDER_URL:', process.env.PROVIDER_URL);
+        const provider = this.providers.get(type);
         if (!provider) {
-            throw new Error("Provider ".concat(type, " not initialized"));
+            throw new Error(`Provider ${type} not initialized`);
         }
         return provider;
-    };
-    ConfigManager.prototype.getConfig = function () {
+    }
+    getConfig() {
         if (!this.config) {
             throw new Error('Config not initialized');
         }
         return this.config;
-    };
-    ConfigManager.prototype.getProtocolConfig = function () {
+    }
+    getProtocolConfig() {
         if (!this.config) {
             throw new Error('Config not initialized');
         }
         return this.config.protocols;
-    };
-    return ConfigManager;
-}());
+    }
+}
 exports.configManager = ConfigManager.getInstance();

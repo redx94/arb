@@ -53,7 +53,7 @@ class FlashLoan:
             print(f"Price check failed (likely mock contract issue): {e}")
             return 0, 0
 
-    def execute_flash_loan(self, proxy_address):
+    def execute_flash_loan(self, proxy_address, slippage_tolerance=50): # 0.5% default
         amount_in = 100 * 10**18
         profit, dai_amount = self.check_arbitrage_opportunity(amount_in)
         if profit <= 0:
@@ -70,8 +70,10 @@ class FlashLoan:
             proxy_address,
             0,
             w3.eth.abi.encode(
-                ['address[]', 'bytes[]'],
+                ['uint256', 'uint256', 'address[]', 'bytes[]'],
                 [
+                    amount_in,
+                    slippage_tolerance,
                     [UNISWAP_ROUTER, CURVE_POOL, WETH, WETH],
                     [
                         uniswap.encodeABI('swapExactTokensForTokens', [amount_in, 0, [WETH, DAI], proxy_address, int(time.time()) + 60]),

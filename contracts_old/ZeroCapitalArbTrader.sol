@@ -161,6 +161,21 @@ contract ZeroCapitalArbTrader is FlashLoanReceiverBase {
         bool buyUniswap = sushiPrice > uniPrice;
         uint256 priceDiff = buyUniswap ? sushiPrice - uniPrice : uniPrice - sushiPrice;
 
+        return executeTradeIfProfitable(network, token, amount, maxSlippage, deadline, pool, uniPrice, sushiPrice, buyUniswap, priceDiff);
+    }
+
+    function executeTradeIfProfitable(
+        Network network,
+        address token,
+        uint256 amount,
+        uint256 maxSlippage,
+        uint256 deadline,
+        IPool pool,
+        uint256 uniPrice,
+        uint256 sushiPrice,
+        bool buyUniswap,
+        uint256 priceDiff
+    ) internal returns (bool) {
         if (priceDiff > minProfitThreshold) {
             try this.executeTrade(network, token, amount, maxSlippage, buyUniswap, deadline) returns (uint256 profit) {
                 if (profit > 0) {

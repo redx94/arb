@@ -14,17 +14,6 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -64,40 +53,39 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ArbitrageEngine = void 0;
 var events_1 = require("events");
-var priceFeeds_js_1 = require("../priceFeeds.js");
-var riskManager_js_1 = require("../riskManager.js");
-var monitoring_js_1 = require("../monitoring.js");
-var tradeExecutor_js_1 = require("../tradeExecutor.js");
-var flashLoanProvider_ts_1 = require("./flashLoanProvider.ts"); // Import FlashLoanProvider, using .ts extension
+var priceFeeds_cjs_1 = require("./../priceFeeds.cjs");
+var riskManager_cjs_1 = require("./../riskManager.cjs");
+var monitoring_cjs_1 = require("../monitoring.cjs");
+var tradeExecutor_cjs_1 = require("../tradeExecutor.cjs");
+var GasAwareFlashLoan_js_1 = require("../gas/GasAwareFlashLoan.js");
 var ArbitrageEngine = /** @class */ (function (_super) {
     __extends(ArbitrageEngine, _super);
     function ArbitrageEngine() {
         var _this = _super.call(this) || this;
         _this.running = false;
-        _this.logger = monitoring_js_1.Logger.getInstance();
+        _this.logger = monitoring_cjs_1.Logger.getInstance();
         _this.unsubscribePriceFeed = null;
-        _this.flashLoanProvider = new flashLoanProvider_ts_1.FlashLoanProvider(); // Use FlashLoanProvider
+        _this.flashLoanProvider = new GasAwareFlashLoan_js_1.GasAwareFlashLoanProvider();
         _this.handlePrice = function (data) { return __awaiter(_this, void 0, void 0, function () {
-            var profitThreshold, dexPriceData, cexPriceData, diff, defaultTradeAmount, tradeAmount, dataWithAmount, riskError_1, buyPlatform, sellPlatform, tradeType, priceNumber, priceBigInt, tokens, protocols, _i, tokens_1, token, _a, protocols_1, protocol, flashLoanParams, txHash, flashLoanError_1, tradeResult, tradeError_1, flashLoanError_2, error_1;
-            var _b;
+            var _b, profitThreshold, dexPriceData, cexPriceData, diff, defaultTradeAmount, tradeAmount, dataWithAmount, riskError_1, buyPlatform, sellPlatform, tradeType, priceNumber, priceBigInt, tokens, protocols, _i, tokens_1, token, _a, protocols_1, protocol, flashLoanParams, txHash, flashLoanError_1, tradeResult, flashLoanError_2, error_1;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0:
-                        console.log('handlePrice: start'); // Added console log
-                        this.logger.info('Handling price update...'); // Added log
-                        this.logger.info('Received price data: ' + JSON.stringify(data)); // Log price data
+                        console.log('handlePrice: start');
+                        this.logger.info('Handling price update...');
+                        this.logger.info('Received price data: ' + JSON.stringify(data));
                         _c.label = 1;
                     case 1:
-                        _c.trys.push([1, 23, , 24]);
+                        _c.trys.push([1, 21, , 22]);
                         profitThreshold = parseFloat(process.env.PROFIT_THRESHOLD || '1');
-                        return [4 /*yield*/, priceFeeds_js_1.PriceFeed.getInstance().getCurrentPrice('dex')];
+                        return [4 /*yield*/, priceFeeds_cjs_1.PriceFeed.getInstance().getCurrentPrice('dex')];
                     case 2:
                         dexPriceData = _c.sent();
-                        this.logger.info('DEX price data: ' + JSON.stringify(dexPriceData)); // Log DEX price data
-                        return [4 /*yield*/, priceFeeds_js_1.PriceFeed.getInstance().getCurrentPrice('cex')];
+                        this.logger.info('DEX price data: ' + JSON.stringify(dexPriceData));
+                        return [4 /*yield*/, priceFeeds_cjs_1.PriceFeed.getInstance().getCurrentPrice('cex')];
                     case 3:
                         cexPriceData = _c.sent();
-                        this.logger.info('CEX price data: ' + JSON.stringify(cexPriceData)); // Log CEX price data
+                        this.logger.info('CEX price data: ' + JSON.stringify(cexPriceData));
                         if (!dexPriceData || !cexPriceData) {
                             this.logger.error('Failed to fetch dex or cex price data.');
                             this.logger.error('dexPriceData: ' + JSON.stringify(dexPriceData) + ', cexPriceData: ' + JSON.stringify(cexPriceData));
@@ -106,18 +94,19 @@ var ArbitrageEngine = /** @class */ (function (_super) {
                         diff = Math.abs(cexPriceData.price - dexPriceData.price) / Math.min(dexPriceData.price, cexPriceData.price) * 100;
                         this.logger.info('Price difference: dex=' + String(dexPriceData.price) + ', cex=' + String(cexPriceData.price) + ', diff=' + String(diff));
                         console.log('dexPriceData.price: ' + String(dexPriceData.price) + ', cexPriceData.price: ' + String(cexPriceData.price) + ', diff: ' + String(diff));
-                        if (!(diff >= profitThreshold)) return [3 /*break*/, 22];
+                        if (!(diff >= profitThreshold))
+                            return [2 /*return*/];
                         console.log('Arbitrage opportunity detected: dex=' + String(dexPriceData.price) + ', cex=' + String(cexPriceData.price) + ', diff=' + String(diff));
                         this.logger.info('Arbitrage opportunity detected: dex=' + String(dexPriceData.price) + ', cex=' + String(cexPriceData.price));
-                        this.emit('arbitrageOpportunity', { dex: Number(dexPriceData.dex), cex: Number(cexPriceData.cex) }); // Emit price data
+                        this.emit('arbitrageOpportunity', { dex: Number(dexPriceData.dex), cex: Number(cexPriceData.cex) });
                         defaultTradeAmount = process.env.TRADE_AMOUNT || '1';
                         tradeAmount = data.amount !== undefined ? String(data.amount) : defaultTradeAmount;
-                        dataWithAmount = __assign(__assign({}, data), { amount: parseFloat(tradeAmount) });
+                        dataWithAmount = Object.assign(Object.assign({}, data), { amount: parseFloat(tradeAmount) });
                         this.logger.info('Validating trade: dex=' + String(dexPriceData.dex) + ', cex=' + String(cexPriceData.cex) + ', amount=' + String(tradeAmount));
                         _c.label = 4;
                     case 4:
                         _c.trys.push([4, 6, , 7]);
-                        return [4 /*yield*/, riskManager_js_1.RiskManager.getInstance().validateTrade({ dex: Number(Number(dexPriceData.dex)), cex: Number(Number(cexPriceData.cex)), amount: parseFloat(tradeAmount) })];
+                        return [4 /*yield*/, riskManager_cjs_1.RiskManager.getInstance().validateTrade({ dex: Number(Number(dexPriceData.dex)), cex: Number(Number(cexPriceData.cex)), amount: parseFloat(tradeAmount) })];
                     case 5:
                         _c.sent();
                         this.logger.info('Trade validated successfully.');
@@ -136,49 +125,43 @@ var ArbitrageEngine = /** @class */ (function (_super) {
                         protocols = (process.env.PROTOCOLS || 'AAVE').split(',');
                         _c.label = 8;
                     case 8:
-                        _c.trys.push([8, 21, , 22]);
+                        _c.trys.push([8, 19, , 20]);
                         _i = 0, tokens_1 = tokens;
                         _c.label = 9;
                     case 9:
-                        if (!(_i < tokens_1.length)) return [3 /*break*/, 20];
+                        if (!(_i < tokens_1.length)) return [3 /*break*/, 18];
                         token = tokens_1[_i];
                         _a = 0, protocols_1 = protocols;
                         _c.label = 10;
                     case 10:
-                        if (!(_a < protocols_1.length)) return [3 /*break*/, 19];
+                        if (!(_a < protocols_1.length)) return [3 /*break*/, 17];
                         protocol = protocols_1[_a];
                         flashLoanParams = {
-                            token: token, // Assuming the first token is the flash loan token
+                            token: token,
                             amount: tradeAmount,
-                            expectedProfit: String(diff), // Using the price difference as the expected profit
-                            deadline: Date.now() + 60000, // 1 minute deadline
+                            expectedProfit: String(diff),
+                            deadline: Date.now() + 60000,
                             protocol: protocol,
                             maxSlippage: 0,
                         };
-                        // Execute flash loan
-                        this.logger.info('Executing flash loan: token=' + token + ', amount=' + tradeAmount + ', protocol=' + protocol);
                         txHash = void 0;
                         _c.label = 11;
                     case 11:
                         _c.trys.push([11, 13, , 14]);
                         return [4 /*yield*/, this.flashLoanProvider.executeFlashLoan(flashLoanParams)];
                     case 12:
-                        txHash = _c.sent(); // Use FlashLoanProvider
+                        txHash = _c.sent();
                         this.logger.info('Flash loan executed successfully: txHash=' + String(txHash));
                         return [3 /*break*/, 14];
                     case 13:
                         flashLoanError_1 = _c.sent();
                         this.logger.error('Flash loan execution failed for token=' + token + ', protocol=' + protocol + ': ' + String(flashLoanError_1));
                         this.emit('error', flashLoanError_1);
-                        return [3 /*break*/, 18]; // Skip to the next token/protocol combination
+                        return [3 /*break*/, 16];
                     case 14:
                         this.logger.info('Executing trade: tradeType=' + tradeType + ', buyPlatform=' + buyPlatform + ', amount=' + tradeAmount + ', token=' + token + ', protocol=' + protocol);
-                        tradeResult = void 0;
-                        _c.label = 15;
+                        return [4 /*yield*/, tradeExecutor_cjs_1.tradeExecutor.executeTrade(tradeType, buyPlatform, tradeAmount, priceBigInt, token, protocol)];
                     case 15:
-                        _c.trys.push([15, 17, , 18]);
-                        return [4 /*yield*/, tradeExecutor_js_1.tradeExecutor.executeTrade(tradeType, buyPlatform, tradeAmount, priceBigInt, token, protocol)];
-                    case 16:
                         tradeResult = _c.sent();
                         if (tradeResult.success) {
                             this.logger.info('Trade executed successfully: id=' + String((_b = tradeResult.trade) === null || _b === void 0 ? void 0 : _b.id) + ', token=' + token + ', protocol=' + protocol);
@@ -188,31 +171,26 @@ var ArbitrageEngine = /** @class */ (function (_super) {
                             this.logger.error('Trade execution failed for token=' + token + ', protocol=' + protocol + ': ' + String(tradeResult.error));
                             this.emit('error', tradeResult.error);
                         }
-                        return [3 /*break*/, 18];
-                    case 17:
-                        tradeError_1 = _c.sent();
-                        this.logger.error('Trade execution failed for token=' + token + ', protocol=' + protocol + ': ' + String(tradeError_1));
-                        this.emit('error', tradeError_1);
-                        return [3 /*break*/, 18];
-                    case 18:
+                        _c.label = 16;
+                    case 16:
                         _a++;
                         return [3 /*break*/, 10];
-                    case 19:
+                    case 17:
                         _i++;
                         return [3 /*break*/, 9];
-                    case 20: return [3 /*break*/, 22];
-                    case 21:
+                    case 18: return [3 /*break*/, 20];
+                    case 19:
                         flashLoanError_2 = _c.sent();
                         this.logger.error('Flash loan execution failed: ' + String(flashLoanError_2));
                         this.emit('error', flashLoanError_2);
-                        return [3 /*break*/, 22];
-                    case 22: return [3 /*break*/, 24];
-                    case 23:
+                        return [3 /*break*/, 20];
+                    case 20: return [3 /*break*/, 22];
+                    case 21:
                         error_1 = _c.sent();
                         this.logger.error('Error in handlePrice: ' + String(error_1));
                         this.emit('error', error_1);
-                        return [3 /*break*/, 24];
-                    case 24: return [2 /*return*/];
+                        return [3 /*break*/, 22];
+                    case 22: return [2 /*return*/];
                 }
             });
         }); };
@@ -229,17 +207,17 @@ var ArbitrageEngine = /** @class */ (function (_super) {
             this.logger.info('ArbitrageEngine already running.');
             return;
         }
-        this.logger.info('ArbitrageEngine starting...'); // Added log
-        this.logger.info('PROFIT_THRESHOLD: ' + String(process.env.PROFIT_THRESHOLD) + ', TRADE_AMOUNT: ' + String(process.env.TRADE_AMOUNT) + ', TOKENS: ' + String(process.env.TOKENS) + ', PROTOCOLS: ' + String(process.env.PROTOCOLS)); // Log env vars
+        this.logger.info('ArbitrageEngine starting...');
+        this.logger.info('PROFIT_THRESHOLD: ' + String(process.env.PROFIT_THRESHOLD) + ', TRADE_AMOUNT: ' + String(process.env.TRADE_AMOUNT) + ', TOKENS: ' + String(process.env.TOKENS) + ', PROTOCOLS: ' + String(process.env.PROTOCOLS));
         this.running = true;
         this.emit('started');
-        this.logger.info('ArbitrageEngine started.'); // Added log
-        this.unsubscribePriceFeed = priceFeeds_js_1.PriceFeed.getInstance().subscribe(this.handlePrice);
+        this.logger.info('ArbitrageEngine started.');
+        this.unsubscribePriceFeed = priceFeeds_cjs_1.PriceFeed.getInstance().subscribe(this.handlePrice.bind(this));
         if (this.unsubscribePriceFeed !== null) {
-            this.logger.info('Subscribed to PriceFeed.'); // Added log
+            this.logger.info('Subscribed to PriceFeed.');
         }
         else {
-            this.logger.error('Failed to subscribe to PriceFeed.'); // Added log
+            this.logger.error('Failed to subscribe to PriceFeed.');
         }
     };
     ArbitrageEngine.prototype.stop = function () {

@@ -32,8 +32,8 @@ contract FlashLoanArbitrage {
     IDyDxSoloMargin constant dydx = IDyDxSoloMargin(0x1E0447b19BB6EcFdAe1e4AE1694b0C3659614e4e); // Mainnet, mocked
     IUniswapV2Router constant uniswap = IUniswapV2Router(0xC532a74256D3Db42D0Bf7a0400fEFDbad7694008); // Sepolia
     ICurvePool constant curve = ICurvePool(0xA2B47E3D5c44877cca798226B7B8118F9BFb7A56);       // Mainnet, mocked
-    address constant WETH = 0x7b79995e5f793a07bc00c21412e50ecae098e7f9; // Sepolia WETH
-    address constant DAI = 0x3e622317f8c93f7328350cf0b56d9ed4c620c5d6;  // Sepolia DAI
+    address constant WETH = 0x7b79995e5f793A07Bc00c21412e50Ecae098E7f9; // Sepolia WETH
+    address constant DAI = 0x3e622317f8C93f7328350cF0B56d9eD4C620C5d6;  // Sepolia DAI
     address public feeRecipient;
 
     constructor(address _feeRecipient) {

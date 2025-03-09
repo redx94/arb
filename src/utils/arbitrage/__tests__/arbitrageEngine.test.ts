@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, DoneCallback } from 'vitest';
 import { ArbitrageEngine } from '../arbitrageEngine';
-import { PriceFeed } from '../../priceFeeds';
+import { PriceFeed } from '../../priceFeeds.cjs';
 import { RiskManager } from '../../riskManager';
 
 describe('ArbitrageEngine', () => {

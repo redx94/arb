@@ -1,20 +1,20 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { ethers } from 'ethers';
 import { ProfitCalculator } from '../profitCalculator.js';
 import { PriceFeed } from '../../priceFeeds.js';
-import { ethers } from 'ethers';
 
 describe('ProfitCalculator', () => {
   let profitCalculator: ProfitCalculator;
-  let mockPriceData: { dex: number; cex: number; timestamp: number; token: string; price: number };
   let mockPriceFeed: any;
 
   beforeEach(() => {
-    mockPriceData = {
+    const mockPriceData = {
       token: 'ETH',
       price: 1000,
       dex: 1000,
       cex: 1020,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      platform: 'dex'
     };
 
     mockPriceFeed = {
@@ -49,7 +49,8 @@ describe('ProfitCalculator', () => {
       price: 0,
       dex: 0,
       cex: 0,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      platform: 'dex'
     });
     const buyPrice = 0n;
     const sellPrice = 0n;
@@ -64,7 +65,8 @@ describe('ProfitCalculator', () => {
       price: 1000,
       dex: 1020,
       cex: 1000,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      platform: 'dex'
     });
     const buyPrice = 1020n;
     const sellPrice = 1000n;
@@ -79,7 +81,8 @@ describe('ProfitCalculator', () => {
       price: 100000,
       dex: 50000,
       cex: 50500,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      platform: 'dex'
     });
     const buyPrice = 50000n;
     const sellPrice = 50500n;
@@ -94,7 +97,8 @@ describe('ProfitCalculator', () => {
       price: 1000,
       dex: 1000,
       cex: 1020,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      platform: 'dex'
     });
     const buyPrice = 1000n;
     const sellPrice = 1020n;

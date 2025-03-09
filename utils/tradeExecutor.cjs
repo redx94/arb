@@ -19,12 +19,38 @@ class TradeExecutor {
                 { asset: 'ETH', dexAmount: 10n, cexAmount: 10n, pending: 0 }, // bigint - Corrected initialization
             ]
         });
+        Object.defineProperty(this, "initialPortfolioValue", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: this.getPortfolioValue()
+        });
+        Object.defineProperty(this, "positionSize", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "entryPrice", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
     }
-    getBalances() {
+   getBalances() {
         return this.balances;
     }
-    async executeTrade(type, platform, amount, price // bigint
-    ) {
+
+    getPortfolioValue() {
+        let portfolioValue = 0;
+        for (let i = 0; i < this.balances.length; i++) {
+            portfolioValue += Number(this.balances[i].dexAmount); // Assuming dexAmount is in ETH
+        }
+        return portfolioValue;
+    }
+
+    async executeTrade(type, platform, amount, price) {
         try {
             this.logger.info(`Executing trade: type=${type}, platform=${platform}, amount=${amount}, price=${price}`);
             const amountNumber = BigInt(amount);
@@ -33,7 +59,11 @@ class TradeExecutor {
             }
             // Validate trade using RiskManager
             const riskManager = RiskManager.getInstance();
-            riskManager.validateTrade({ dex: Number(price), cex: Number(price), amount: Number(amountNumber) }); // Replace with actual dex and cex prices
+            riskManager.validateTrade({ dex: Number(price), cex: Number(price), amount: Number(amountNumber), positionSize: this.positionSize, currentPrice: Number(price), entryPrice: this.entryPrice }); // Replace with actual dex and cex prices
+
+            this.positionSize = Number(amountNumber);
+            this.entryPrice = Number(price);
+
             const gasAwareFlashLoanProvider = new GasAwareFlashLoanProvider();
             // Dynamically determine flash loan parameters based on trade details
             const flashLoanParams = {
@@ -204,7 +234,7 @@ class TradeExecutor {
         return true; // Assume mitigation applied for now after quantum volatility mitigation simulation
     }
 
-    async runQuantumExecutionStressTest(): Promise<boolean> {
+    async runQuantumExecutionStressTest() {
         // Quantum Execution Safeguards: Quantum stress tests under simulated rapid market fluctuations and quantum flash crash scenarios (simulated) - Phase 2.2
         console.log("Quantum Execution Safeguards: Initiating quantum stress test under simulated rapid market fluctuations and quantum flash crash scenarios...");
         // In a real quantum system, quantum simulators would be used to test the execution logic
@@ -216,12 +246,6 @@ class TradeExecutor {
 
     async calculateProfit(trade) {
         // Phase 3: Quantum-Enhanced Smart Contract and Transaction Efficiency - End
-        // Basic profit calculation: (sell price - buy price) * amount
-        const profitBigint = (trade.type === 'SELL' ? 1n : -1n) * trade.amount * (trade.effectivePrice - trade.price);
-        return Number(profitBigint); // Convert bigint to number before returning
-    }
-}
-export const tradeExecutor = new TradeExecutor();
         // Basic profit calculation: (sell price - buy price) * amount
         const profitBigint = (trade.type === 'SELL' ? 1n : -1n) * trade.amount * (trade.effectivePrice - trade.price);
         return Number(profitBigint); // Convert bigint to number before returning

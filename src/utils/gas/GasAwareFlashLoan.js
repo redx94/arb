@@ -40,7 +40,7 @@ exports.GasAwareFlashLoanProvider = void 0;
 // @ts-nocheck
 var ethers = require("ethers");
 var GasOptimizer_js_1 = require("./GasOptimizer.js");
-var monitoring_js_1 = require("../monitoring.js");
+var monitoring_js_1 = require("../monitoring.cjs");
 var logger = monitoring_js_1.Logger.getInstance();
 var GasAwareFlashLoanProvider = /** @class */ (function () {
     function GasAwareFlashLoanProvider() {

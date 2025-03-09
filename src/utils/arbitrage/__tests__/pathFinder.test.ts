@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, DoneCallback } from 'vitest';
+import { ethers } from 'ethers';
 import { PathFinder } from '../pathFinder';
 import { PriceFeed } from '../../priceFeeds';
 import type { PriceData } from '../../../types';
@@ -18,9 +19,10 @@ describe('PathFinder', () => {
       price: 1000,
       dex: 990, // DEX price lower
       cex: 1010, // CEX price higher
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      platform: 'dex'
     });
-    const mockPriceData: PriceData | null = await PriceFeed.getInstance().getCurrentPrice(); // Allow null
+    const mockPriceData: PriceData | null = await PriceFeed.getInstance().getCurrentPrice('dex'); // Allow null
     if (mockPriceData) { // Check if not null
       const path = await pathFinder.findOptimalPath('DEX_A', 1.0, mockPriceData);
 
@@ -31,7 +33,7 @@ describe('PathFinder', () => {
   });
 
   it('should return null when no profitable path exists', async () => {
-    const mockPriceData: PriceData | null = await PriceFeed.getInstance().getCurrentPrice(); // Allow null
+    const mockPriceData: PriceData | null = await PriceFeed.getInstance().getCurrentPrice('dex'); // Allow null
     if (mockPriceData) { // Check if not null
       // Mock PriceFeed to return unprofitable price data for testing this scenario reliably if live data is always profitable
       vi.spyOn(PriceFeed.getInstance(), 'getCurrentPrice').mockResolvedValueOnce({
@@ -39,7 +41,8 @@ describe('PathFinder', () => {
         price: 1000,
         dex: 1000,
         cex: 1001,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        platform: 'dex'
       });
 
       const path = await pathFinder.findOptimalPath('DEX_A', 1.0, mockPriceData);
@@ -48,7 +51,7 @@ describe('PathFinder', () => {
   });
 
   it('should respect maximum path length', async () => {
-    const mockPriceData: PriceData | null = await PriceFeed.getInstance().getCurrentPrice(); // Allow null
+    const mockPriceData: PriceData | null = await PriceFeed.getInstance().getCurrentPrice('dex'); // Allow null
     if (mockPriceData) { // Check if not null
       const path = await pathFinder.findOptimalPath('DEX_A', 1.0, mockPriceData);
       if (path) {
@@ -61,7 +64,7 @@ describe('PathFinder', () => {
   });
 
   it('should consider fees in profit calculation', async () => {
-    const mockPriceData: PriceData | null = await PriceFeed.getInstance().getCurrentPrice(); // Allow null
+    const mockPriceData: PriceData | null = await PriceFeed.getInstance().getCurrentPrice('dex'); // Allow null
     if (mockPriceData) { // Check if not null
       const path = await pathFinder.findOptimalPath('DEX_A', 1.0, mockPriceData);
       if (path) {

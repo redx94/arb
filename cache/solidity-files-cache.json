@@ -39,8 +39,8 @@
       ]
     },
     "/Users/redx/Documents/arb/contracts/FlashLoanArbitrage.sol": {
-      "lastModificationDate": 1741273691893,
-      "contentHash": "17106129a7f4b312e21dedc6be223a32",
+      "lastModificationDate": 1741455097659,
+      "contentHash": "bdada88e8f1568ee0efc2c232371e6b1",
       "sourceName": "contracts/FlashLoanArbitrage.sol",
       "solcConfig": {
         "version": "0.8.20",

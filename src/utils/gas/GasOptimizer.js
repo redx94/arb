@@ -37,7 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GasOptimizer = void 0;
-var monitoring_js_1 = require("../monitoring.js");
+var monitoring_js_1 = require("../monitoring.cjs");
 var cacheManager_js_1 = require("../cache/cacheManager.js");
 var index_js_1 = require("../config/index.js");
 var GasOptimizer = /** @class */ (function () {

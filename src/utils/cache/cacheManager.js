@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CacheManager = void 0;
-var monitoring_1 = require("../monitoring");
+var monitoring_1 = require("../monitoring.cjs");
 var logger = monitoring_1.Logger.getInstance();
 var CacheManager = /** @class */ (function () {
     function CacheManager(config) {

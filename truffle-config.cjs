@@ -1,23 +1,31 @@
 const path = require('path');
+const HDWalletProvider = require('@truffle/hdwallet-provider');
+require('dotenv').config();
+
+const privateKey = process.env.PRIVATE_KEY;
+const feeRecipient = process.env.FEE_RECIPIENT_ADDRESS;
 
 module.exports = {
   contracts_directory: './contracts',
   contracts_build_directory: '/Users/redx/Documents/arb/build',
-
-  // Configure paths for external libraries
-  // resolver: { // Removed resolver alias as it caused errors
-  //   alias: {
-  //     '@chainlink/contracts': path.resolve(__dirname, 'node_modules/@chainlink/contracts')
-  //   }
-  // },
+  contracts_ignore: ["ZeroCapitalArbTrader.sol"],
 
   networks: {
     development: {
       host: "127.0.0.1",
       port: 8545,
       network_id: "*",
-      gas: 6721975, // Adjust gas limit as needed
-      gasPrice: 20000000000 // Adjust gas price as needed
+      gas: 6721975,
+      gasPrice: 20000000000
+    },
+    sepolia: {
+      provider: () => new HDWalletProvider(privateKey, process.env.PROVIDER_URL),
+      network_id: 11155111,
+      gas: 4000000,
+      gasPrice: 10000000000,
+      confirmations: 2,
+      timeoutBlocks: 200,
+      skipDryRun: true
     }
   },
   compilers: {
@@ -32,7 +40,12 @@ module.exports = {
           "@chainlink/contracts/=node_modules/@chainlink/contracts/",
           "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/"
         ]
-      }
+      },
+      viaIR: true
     }
+  },
+  // Pass contract addresses to migrations
+  migrations_compile_mocha: {
+    feeRecipient: feeRecipient
   }
 };

@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events';
 import { PriceFeed } from '../priceFeeds';
-import { RiskManager } from '../riskManager';
 import { Logger } from '../monitoring';
 import { tradeExecutor } from '../tradeExecutor';
 
@@ -61,7 +60,7 @@ export class ArbitrageEngine extends EventEmitter {
                         // Check risk management
                         const dataWithAmount = { dex: dexPrice, cex: cexPrice, amount: parseFloat(tradeAmount) };
                         try {
-                            await RiskManager.getInstance().validateTrade(dataWithAmount);
+                            await tradeExecutor.riskManager.validateTrade(dataWithAmount);
                         } catch (riskError) {
                             this.logger.warn(`Trade validation failed: ${riskError}`);
                             this.emit('riskError', riskError);
